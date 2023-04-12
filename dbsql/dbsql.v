@@ -1,118 +1,118 @@
 module dbsql
 
 import geometry
-import db.sqlite
 import json
 import math
+import db.mysql
 
-pub const sqlite_error_codes=$embed_file("sqlite-codes.json",.zlib)
 pub struct SqliteResultCode{
 	code i64
 	short string
 	long string
 }
-pub fn find_result_code_by_id(id i64) SqliteResultCode{
-	all:=json.decode([]SqliteResultCode,sqlite_error_codes.to_string()) or {
-		panic(err)
-	}
-	// println(all)
-	fnd:= all.filter(fn [id](a SqliteResultCode)bool{return a.code == id})
-	if fnd.len == 0 {
-		return SqliteResultCode{code:id,short:"undefined",long:"undefined"}
-	} else {
-		return fnd[0]
-	}
-}
 
-pub struct SqlitePool {
-	pub mut :
-		specifier string
-		flags []sqlite.OpenModeFlag= [sqlite.OpenModeFlag.readwrite,sqlite.OpenModeFlag.nomutex,]
-		sync_mode sqlite.SyncMode =sqlite.SyncMode.off
-		journal_mode sqlite.JournalMode = sqlite.JournalMode.off
-}
-struct SelectResult{
-	rows []sqlite.Row
+struct SelectResult[K]{
+	rows []K
 	result_code SqliteResultCode
 }
-pub fn (mut s SqlitePool) init()!{
-	s.with_connection(fn ( db sqlite.DB ) !SelectResult {
-		r,i := db.exec("
-			CREATE TABLE IF NOT EXISTS BOXES(
-				id VARCHAR(40) PRIMARY KEY NOT NULL,
-				ent_type VARCHAR(40),
-				json VARCHAR(4000),
-				x0 DOUBLE,
-				y0 DOUBLE,
-				x1 DOUBLE,
-				y1 DOUBLE,
-				visible_size DOUBLE
-			)
-		")
-		return SelectResult{r,find_result_code_by_id(i)}
-	}) or {
-		panic(err)
-	}
+pub struct SqlitePool {
+	pub mut :
+	username string= 'admin'
+	dbname string= 'geodb'
+	password string= 'password'
 }
-pub fn (mut s SqlitePool) with_connection(execute_statements fn(db sqlite.DB)!SelectResult)!SelectResult{
+pub fn (mut s SqlitePool) with_mysql_connection(execute_statements fn(connection mysql.Connection)!SelectResult[mysql.Row])!SelectResult[mysql.Row]{
 	println("opened database")
-	mut db:=sqlite.connect(
-		s.specifier) or {
-		panic("could not connect to ${s.specifier} ")
+	mut con:=mysql.Connection{
+		username: s.username
+		dbname: s.dbname
+		password: s.password
 	}
-	if db.is_open {
-		println("the database ${s.specifier} is open")
-	} else {
-		println("the database ${s.specifier} is NOT open")
+	con.connect() or {
+		panic("could not connect to $s")
 	}
-	db.synchronization_mode(s.sync_mode)
-	db.journal_mode(s.journal_mode)
-	rv:= execute_statements(db) or {
+	rv:= execute_statements(con) or {
 		panic(err)
 	}
-	db.close() or {
-		panic(err)
-	}
+	con.close()
 	println("closed database")
 	return rv
+}
+pub fn (mut s SqlitePool) init_mysql()!{
+	s.mysql_exec("
+		CREATE TABLE IF NOT EXISTS BOXES(
+			id VARCHAR(40),
+			ent_type VARCHAR(40),
+			json VARCHAR(4000),
+			x0 DOUBLE,
+			y0 DOUBLE,
+			x1 DOUBLE,
+			y1 DOUBLE,
+			visible_size DOUBLE
+		)
+	") or {
+		panic(err)
+	}
 }
 pub fn (mut s SqlitePool) disconnect()!{
 	println("closed database")
 }
-fn (mut s SqlitePool) query(q string) !SelectResult {
-	println("opened database")
-	mut db:=sqlite.connect(
-		s.specifier) or {
-		panic("could not connect to ${s.specifier} ")
+struct GenericRow{
+	vals []string
+}
+fn (mut s SqlitePool) mysql_exec(q string) ! {
+	println("mysql_query opened database")
+	println("mysql_query opened $q")
+	mut con:=mysql.Connection{
+		username: s.username
+		dbname: s.dbname
+		password: s.password
 	}
-	if db.is_open {
-		println("the database ${s.specifier} is open")
-	} else {
-		println("the database ${s.specifier} is NOT open")
+	con.connect() or {
+		panic("could not connect to $s ")
 	}
-	db.synchronization_mode(s.sync_mode)
-	db.journal_mode(s.journal_mode)
-	mut r,mut i:= db.exec(q)
-	defer {
-		r,i=db.exec("COMMIT")
-
-		println("$r $i")
-		db.close() or {
-			panic(err)
-		}
-		println("closed database")
+	rv:= con.query(q) or {
+		panic(err)
 	}
-	return SelectResult{r,find_result_code_by_id(i)}
+	con.close()
+	println("mysql_query closed database")
+}
+fn (mut s SqlitePool) mysql_query(q string) !SelectResult[GenericRow] {
+	println("mysql_query opened database")
+	println("mysql_query opened $q")
+	mut con:=mysql.Connection{
+		username: s.username
+		dbname: s.dbname
+		password: s.password
+	}
+	con.connect() or {
+		panic("could not connect to $s ")
+	}
+	rv:= con.query(q) or {
+		panic(err)
+	}
+	mut rows:=[]GenericRow{}
+	for r in rv.rows() {
+		rows<<GenericRow{vals: r.vals.map(it.str())}
+	}
+	con.close()
+	println("mysql_query closed database")
+	return SelectResult[GenericRow]{
+		rows,SqliteResultCode{
+		code: 101
+		short: 'dummy mysql result'
+		long: 'dummy mysql result'
+	}}
 }
 pub fn (mut s SqlitePool)  get_all_entities() []geometry.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
 		FROM BOXES"
 	println("executing query $q")
-	r:=s.query(q) or {
+	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r sqlite.Row) geometry.Entity {
+	return r.rows.map(fn(r GenericRow) geometry.Entity {
 		return geometry.Entity{
 			id: r.vals[0]
 			ent_type: r.vals[1]
@@ -133,10 +133,10 @@ pub fn (mut s SqlitePool)  get_entities_inside_box(box geometry.Box) []geometry.
 		or ($x0 BETWEEN x0 and x1 and $x1 BETWEEN x0 and x1
 		and $y0 BETWEEN y0 and y1 and $y1 BETWEEN y0 and y1 )"
 	println("executing query $q")
-	r:=s.query(q) or {
+	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r sqlite.Row) geometry.Entity {
+	return r.rows.map(fn(r GenericRow) geometry.Entity {
 		return geometry.Entity{
 			id: r.vals[0]
 			ent_type: r.vals[1]
@@ -144,8 +144,7 @@ pub fn (mut s SqlitePool)  get_entities_inside_box(box geometry.Box) []geometry.
 		}
 	})
 }
-pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) ![]SelectResult {
-	mut rcodes:=[]SelectResult{}
+pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) !{
 	h:="INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size) VALUES "
 	for ent in es{
 		bx:=json.decode(geometry.Box,ent.json) or {
@@ -158,10 +157,8 @@ pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) ![]SelectResult {
 		vs:=math.max[f64](x1-x0,y1-y0)
 		q:="('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)"
 		println(h+q )
-		rcode:=s.query(h+q+'') or {
+		s.mysql_exec(h+q+'') or {
 			panic(err)
 		}
-		rcodes<<rcode
 	}
-	return rcodes
 }

@@ -30,8 +30,7 @@ fn main() {
 
 fn new_app() App {
 	mut dbpool:=dbsql.SqlitePool{}
-	dbpool.specifier=":memory:"//"/home/alfu64/Development/canvas-app/backend/geo.sqlite.db"
-	dbpool.init() or {
+	dbpool.init_mysql() or {
 		panic(err)
 	}
 	mut app := App{
@@ -55,7 +54,7 @@ pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string,s string
 }
 ['/entities'; post]
 fn (mut app App) store_entity() vweb.Result {
-	rcode := app.dbpool.store_entities(json.decode([]geometry.Entity,app.req.data) or { [] }) or {
+	app.dbpool.store_entities(json.decode([]geometry.Entity,app.req.data) or { [] }) or {
 		println("could not properly store one of the decoded entities")
 		panic(err)
 	}
