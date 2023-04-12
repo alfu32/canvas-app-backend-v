@@ -44,8 +44,6 @@ struct GenericRow{
 	vals []string
 }
 fn (mut s SqlitePool) mysql_exec(q string) ! {
-	println("mysql_query opened database")
-	println("mysql_query opened $q")
 	mut con:=mysql.Connection{
 		username: s.username
 		dbname: s.dbname
@@ -58,11 +56,8 @@ fn (mut s SqlitePool) mysql_exec(q string) ! {
 		panic(err)
 	}
 	con.close()
-	println("mysql_query closed database")
 }
 fn (mut s SqlitePool) mysql_query(q string) !SelectResult[GenericRow] {
-	println("mysql_query opened database")
-	println("mysql_query opened $q")
 	mut con:=mysql.Connection{
 		username: s.username
 		dbname: s.dbname
@@ -79,7 +74,6 @@ fn (mut s SqlitePool) mysql_query(q string) !SelectResult[GenericRow] {
 		rows<<GenericRow{vals: r.vals.map(it.str())}
 	}
 	con.close()
-	println("mysql_query closed database")
 	return SelectResult[GenericRow]{
 		rows,SqliteResultCode{
 		code: 101
@@ -91,7 +85,6 @@ pub fn (mut s SqlitePool)  get_all_entities() []geometry.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
 		FROM BOXES"
-	println("executing query $q")
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -115,7 +108,6 @@ pub fn (mut s SqlitePool)  get_entities_inside_box(box geometry.Box) []geometry.
 		and y0 BETWEEN $y0 and $y1 and y1 BETWEEN $y0 and $y1 )
 		or ($x0 BETWEEN x0 and x1 and $x1 BETWEEN x0 and x1
 		and $y0 BETWEEN y0 and y1 and $y1 BETWEEN y0 and y1 )"
-	println("executing query $q")
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -139,7 +131,6 @@ pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) !{
 		y1:=bx.corner().y
 		vs:=math.max[f64](x1-x0,y1-y0)
 		q:="('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)"
-		println(h+q )
 		s.mysql_exec(h+q+'') or {
 			panic(err)
 		}

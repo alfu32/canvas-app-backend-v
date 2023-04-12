@@ -13,7 +13,6 @@ struct App {
 }
 
 pub fn (mut app App) destroy_handler(sig os.Signal){
-	println("received $sig")
 	app.dbpool.disconnect() or {
 		panic(err)
 	}
@@ -21,8 +20,7 @@ pub fn (mut app App) destroy_handler(sig os.Signal){
 }
 fn main() {
 	app:=new_app()
-	h:=os.signal_opt(os.Signal.term,app.destroy_handler)!
-	println(h)
+	os.signal_opt(os.Signal.term,app.destroy_handler)!
 	vweb.run_at(app, vweb.RunParams{
 		port: 8081
 	}) or { panic(err) }
@@ -55,7 +53,6 @@ pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Re
 ['/entities'; post]
 fn (mut app App) store_entity() vweb.Result {
 	app.dbpool.store_entities(json.decode([]geometry.Entity,app.req.data) or { [] }) or {
-		println("could not properly store one of the decoded entities")
 		panic(err)
 	}
 	return app.json[[]geometry.Entity](app.dbpool.get_all_entities())
