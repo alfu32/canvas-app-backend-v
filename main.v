@@ -4,9 +4,7 @@ import vweb
 import os
 import dbsql
 import geometry
-import json
 import net.http
-import net.urllib
 
 [heap]
 struct App {
