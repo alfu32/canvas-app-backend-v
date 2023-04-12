@@ -51,10 +51,10 @@ fn test_simple_mysql(){
 	connection.query('create table test(id varchar(255) primary key not null,data varchar(255))') or {
 		panic(err)
 	}
-	nnection.query("DROP TABLE IF EXISTS BOXES")or {
+	connection.query("DROP TABLE IF EXISTS BOXES")or {
 		panic(err)
 	}
-	nnection.query("
+	connection.query("
 			CREATE TABLE IF NOT EXISTS BOXES(
 				id VARCHAR(40) PRIMARY KEY NOT NULL,
 				ent_type VARCHAR(40),
