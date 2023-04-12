@@ -45,16 +45,16 @@ fn test_simple_mysql(){
 		panic(err)
 	}
 	// Do a query
-	dt := connection.query('drop table test') or {
+	connection.query('drop table test') or {
 		panic(err)
 	}
-	ct := connection.query('create table test(id varchar(255) primary key not null,data varchar(255))') or {
+	connection.query('create table test(id varchar(255) primary key not null,data varchar(255))') or {
 		panic(err)
 	}
-	dtb:=connection.query("DROP TABLE IF EXISTS BOXES")or {
+	nnection.query("DROP TABLE IF EXISTS BOXES")or {
 		panic(err)
 	}
-	ctb:=connection.query("
+	nnection.query("
 			CREATE TABLE IF NOT EXISTS BOXES(
 				id VARCHAR(40) PRIMARY KEY NOT NULL,
 				ent_type VARCHAR(40),
@@ -68,10 +68,10 @@ fn test_simple_mysql(){
 		")or {
 		panic(err)
 	}
-	i1 := connection.query("insert into test(id,data) values ('a','afdasdf asdfasdf asdfasdf ')") or {
+	connection.query("insert into test(id,data) values ('a','afdasdf asdfasdf asdfasdf ')") or {
 		panic(err)
 	}
-	i2 := connection.query("insert into test(id,data) values ('b','afdasdf asdfasdf asdfasdf ')") or {
+	connection.query("insert into test(id,data) values ('b','afdasdf asdfasdf asdfasdf ')") or {
 		panic(err)
 	}
 	mut rcode:=connection.query("select MAX(id) as mxid FROM BOXES") or {

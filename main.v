@@ -46,8 +46,8 @@ fn new_app() App {
 pub fn (mut app App) get_all_entities() vweb.Result {
 	return app.json[[]geometry.Entity](app.dbpool.get_all_entities())
 }
-['/entities/:x0/:y0/:w/:h/:s'; get]
-pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string,s string) vweb.Result {
+['/entities/:x0/:y0/:w/:h'; get]
+pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Result {
 	bx:=geometry.Box{anchor:geometry.Point{x:x0.i64(),y:y0.i64()},size:geometry.Point{x:w.i64(),y:h.i64()}}
 	println(bx)
 	return app.json[[]geometry.Entity](app.dbpool.get_entities_inside_box(bx))

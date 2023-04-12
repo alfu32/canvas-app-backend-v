@@ -21,23 +21,6 @@ pub struct SqlitePool {
 	dbname string= 'geodb'
 	password string= 'password'
 }
-pub fn (mut s SqlitePool) with_mysql_connection(execute_statements fn(connection mysql.Connection)!SelectResult[mysql.Row])!SelectResult[mysql.Row]{
-	println("opened database")
-	mut con:=mysql.Connection{
-		username: s.username
-		dbname: s.dbname
-		password: s.password
-	}
-	con.connect() or {
-		panic("could not connect to $s")
-	}
-	rv:= execute_statements(con) or {
-		panic(err)
-	}
-	con.close()
-	println("closed database")
-	return rv
-}
 pub fn (mut s SqlitePool) init_mysql()!{
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS BOXES(
@@ -55,7 +38,7 @@ pub fn (mut s SqlitePool) init_mysql()!{
 	}
 }
 pub fn (mut s SqlitePool) disconnect()!{
-	println("closed database")
+	println("closed database $s")
 }
 struct GenericRow{
 	vals []string
@@ -71,7 +54,7 @@ fn (mut s SqlitePool) mysql_exec(q string) ! {
 	con.connect() or {
 		panic("could not connect to $s ")
 	}
-	rv:= con.query(q) or {
+	con.query(q) or {
 		panic(err)
 	}
 	con.close()
