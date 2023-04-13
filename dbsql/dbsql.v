@@ -15,13 +15,13 @@ struct SelectResult[K]{
 	rows []K
 	result_code SqliteResultCode
 }
-pub struct SqlitePool {
+pub struct DbPool {
 	pub mut :
 	username string= 'admin'
 	dbname string= 'geodb'
 	password string= 'password'
 }
-pub fn (mut s SqlitePool) init_mysql()!{
+pub fn (mut s DbPool) init_mysql()!{
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS BOXES(
 			id VARCHAR(40),
@@ -37,13 +37,13 @@ pub fn (mut s SqlitePool) init_mysql()!{
 		panic(err)
 	}
 }
-pub fn (mut s SqlitePool) disconnect()!{
+pub fn (mut s DbPool) disconnect()!{
 	println("closed database $s")
 }
 struct GenericRow{
 	vals []string
 }
-fn (mut s SqlitePool) mysql_exec(q string) ! {
+fn (mut s DbPool) mysql_exec(q string) ! {
 	mut con:=mysql.Connection{
 		username: s.username
 		dbname: s.dbname
@@ -57,7 +57,7 @@ fn (mut s SqlitePool) mysql_exec(q string) ! {
 	}
 	con.close()
 }
-fn (mut s SqlitePool) mysql_query(q string) !SelectResult[GenericRow] {
+fn (mut s DbPool) mysql_query(q string) !SelectResult[GenericRow] {
 	mut con:=mysql.Connection{
 		username: s.username
 		dbname: s.dbname
@@ -81,7 +81,7 @@ fn (mut s SqlitePool) mysql_query(q string) !SelectResult[GenericRow] {
 		long: 'dummy mysql result'
 	}}
 }
-pub fn (mut s SqlitePool)  get_all_entities() []geometry.Entity {
+pub fn (mut s DbPool)  get_all_entities() []geometry.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
 		FROM BOXES"
@@ -96,7 +96,7 @@ pub fn (mut s SqlitePool)  get_all_entities() []geometry.Entity {
 		}
 	})
 }
-pub fn (mut s SqlitePool)  get_entities_inside_box(box geometry.Box) []geometry.Entity {
+pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Entity {
 	x0:=box.anchor.x
 	x1:=box.corner().x
 	y0:=box.anchor.y
@@ -119,7 +119,7 @@ pub fn (mut s SqlitePool)  get_entities_inside_box(box geometry.Box) []geometry.
 		}
 	})
 }
-pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) !{
+pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 	h:="INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size) VALUES "
 	for ent in es{
 		bx:=json.decode(geometry.Box,ent.json) or {
@@ -135,4 +135,22 @@ pub fn (mut s SqlitePool) store_entities(es []geometry.Entity) !{
 			panic(err)
 		}
 	}
+}
+pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity {
+	ids:=id_list.map("'${it}'").join(',')
+	q:="
+		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
+		FROM BOXES
+		WHERE id in ($ids)
+	"
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return r.rows.map(fn(r GenericRow) geometry.Entity {
+		return geometry.Entity{
+			id: r.vals[0]
+			ent_type: r.vals[1]
+			json: r.vals[2]
+		}
+	})
 }

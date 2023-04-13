@@ -5,7 +5,7 @@ import db.mysql
 
 
 fn test_simple_sqlite(){
-	mut s:=SqlitePool{}
+	mut s:=DbPool{}
 	s.specifier='test.file.db'
 	println(s)
 	mut rcode:=s.query("DROP table test")!
@@ -92,7 +92,7 @@ fn test_simple_mysql(){
 }
 
 fn test_service(){
-	mut s:=SqlitePool{}
+	mut s:=DbPool{}
 	s.specifier='test.file.db'
 	mut rcode:=s.query("select MAX(id) FROM BOXES;")!
 	println("$rcode")

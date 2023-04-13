@@ -10,7 +10,7 @@ import net.http
 struct App {
 	vweb.Context
 	middlewares map[string][]vweb.Middleware
-	mut : dbpool dbsql.SqlitePool
+	mut : dbpool dbsql.DbPool
 }
 
 pub fn (mut app App) destroy_handler(sig os.Signal){
@@ -28,7 +28,7 @@ fn main() {
 }
 
 fn new_app() App {
-	mut dbpool:=dbsql.SqlitePool{}
+	mut dbpool:=dbsql.DbPool{}
 	dbpool.init_mysql() or {
 		panic(err)
 	}
@@ -108,6 +108,17 @@ fn (mut app App) store_entity() vweb.Result {
 		all_ents:=app.dbpool.get_all_entities()
 		println("all_ents $all_ents")
 		return app.json[[]geometry.Entity](all_ents)
+	}
+}
+['/config/:ids'; get;options]
+pub fn (mut app App) get_config(ids string) vweb.Result {
+	id_list:=ids.split(",")
+	if app.req.method == http.Method.options {
+		println(id_list)
+		return app.json[[]geometry.Entity](app.dbpool.get_metadatas_by_ids(id_list))
+	} else {
+		println(id_list)
+		return app.json[[]geometry.Entity](app.dbpool.get_metadatas_by_ids(id_list))
 	}
 }
 
