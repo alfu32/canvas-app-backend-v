@@ -44,6 +44,36 @@ pub fn (mut s DbPool) init_mysql()!{
 	".trim_indent()) or {
 		panic(err)
 	}
+	s.mysql_exec("
+		create or replace function box_contains_point(
+			px NUMERIC(15),py NUMERIC(15),bx0 NUMERIC(15),
+			by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
+		) RETURNS BOOLEAN
+		BEGIN
+			return px between bx0 and bx1 and py between by0 and by1;
+		END;
+	".trim_indent()) or {
+		panic(err)
+	}
+	s.mysql_exec("
+		create or replace function box_intersects_box(
+			ax0 NUMERIC(15),ay0 NUMERIC(15),ax1 NUMERIC(15),ay1 NUMERIC(15),
+			bx0 NUMERIC(15),by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
+		)
+			RETURNS BOOLEAN
+		BEGIN
+			return box_contains_point(ax0,ay0, bx0,by0,bx1,by1)
+				OR box_contains_point(ax0,ay1, bx0,by0,bx1,by1)
+				OR box_contains_point(ax1,ay1, bx0,by0,bx1,by1)
+				OR box_contains_point(ax1,ay0, bx0,by0,bx1,by1)
+				OR box_contains_point(bx0,by0, ax0,ay0,ax1,ay1)
+				OR box_contains_point(bx0,by1, ax0,ay0,ax1,ay1)
+				OR box_contains_point(bx1,by1, ax0,ay0,ax1,ay1)
+				OR box_contains_point(bx1,by0, ax0,ay0,ax1,ay1);
+		END;
+	".trim_indent()) or {
+		panic(err)
+	}
 }
 pub fn (mut s DbPool) disconnect()!{
 	println("closed database $s")
@@ -113,11 +143,9 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
 		FROM BOXES
-		WHERE (x0 BETWEEN $x0 and $x1 and x1 BETWEEN $x0 and $x1
-		and y0 BETWEEN $y0 and $y1 and y1 BETWEEN $y0 and $y1 )
-		or ($x0 BETWEEN x0 and x1 and $x1 BETWEEN x0 and x1
-		and $y0 BETWEEN y0 and y1 and $y1 BETWEEN y0 and y1 )
+		WHERE box_intersects_box(x0,y0,x1,y1,$x0,$y0,$x1,$y1)
 	".trim_indent()
+	println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
