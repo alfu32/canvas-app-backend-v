@@ -1,6 +1,7 @@
 # Binaries for programs and plugins
 main
 backend
+canvas-app-backend-v
 *.exe
 *.exe~
 *.so
