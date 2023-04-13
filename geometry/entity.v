@@ -9,6 +9,17 @@ pub mut:
 	ent_type string
 	json string
 }
+pub struct EntityMetadata{
+	id string
+	ent_type string=''
+	technology string='javascript'
+	text string=''
+	tag string='code'
+}
+
+pub fn new_metadata(id string) EntityMetadata {
+	return EntityMetadata{id:id}
+}
 
 pub fn from_json(j string) !Entity {
 	mut e:=json.decode(Entity,j)or{

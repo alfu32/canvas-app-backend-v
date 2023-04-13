@@ -2,7 +2,7 @@ module main
 
 import vweb
 import os
-import dbsql
+import dbpool
 import geometry
 import net.http
 
@@ -10,11 +10,11 @@ import net.http
 struct App {
 	vweb.Context
 	middlewares map[string][]vweb.Middleware
-	mut : dbpool dbsql.DbPool
+	mut : pool dbpool.DbPool
 }
 
 pub fn (mut app App) destroy_handler(sig os.Signal){
-	app.dbpool.disconnect() or {
+	app.pool.disconnect() or {
 		panic(err)
 	}
 	exit(0)
@@ -28,12 +28,12 @@ fn main() {
 }
 
 fn new_app() App {
-	mut dbpool:=dbsql.DbPool{}
-	dbpool.init_mysql() or {
+	mut pool:=dbpool.DbPool{}
+	pool.init_mysql() or {
 		panic(err)
 	}
 	mut app := App{
-		dbpool: dbpool,
+		pool: pool,
 		middlewares: {
 			// chaining is allowed, middleware will be evaluated in order
 			// '/entities': [middleware_func, other_func]
@@ -78,9 +78,9 @@ pub fn intercept(mut ctx vweb.Context) bool {
 ['/entities/all'; get;options]
 pub fn (mut app App) get_all_entities() vweb.Result {
 	if app.req.method == http.Method.options {
-		return app.json[[]geometry.Entity](app.dbpool.get_all_entities())
+		return app.json[[]geometry.Entity](app.pool.get_all_entities())
 	} else {
-		return app.json[[]geometry.Entity](app.dbpool.get_all_entities())
+		return app.json[[]geometry.Entity](app.pool.get_all_entities())
 	}
 }
 ['/entities/:x0/:y0/:w/:h'; get;options]
@@ -88,24 +88,24 @@ pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Re
 	bx:=geometry.Box{anchor:geometry.Point{x:x0.i64(),y:y0.i64()},size:geometry.Point{x:w.i64(),y:h.i64()}}
 	if app.req.method == http.Method.options {
 		println(bx)
-		return app.json[[]geometry.Entity](app.dbpool.get_entities_inside_box(bx))
+		return app.json[[]geometry.Entity](app.pool.get_entities_inside_box(bx))
 	} else {
 		println(bx)
-		return app.json[[]geometry.Entity](app.dbpool.get_entities_inside_box(bx))
+		return app.json[[]geometry.Entity](app.pool.get_entities_inside_box(bx))
 	}
 }
 ['/entities'; post;options]
 fn (mut app App) store_entity() vweb.Result {
 	if app.req.method == http.Method.options {
-		return app.json[[]geometry.Entity](app.dbpool.get_all_entities())
+		return app.json[[]geometry.Entity](app.pool.get_all_entities())
 	} else {
 		println("received ${app.req.data}")
 		mut decoded:=geometry.entity_from_json_array(app.req.data) or { [] }
 		println("decoded $decoded")
-		app.dbpool.store_entities(decoded) or {
+		app.pool.store_entities(decoded) or {
 			panic(err)
 		}
-		all_ents:=app.dbpool.get_all_entities()
+		all_ents:=app.pool.get_all_entities()
 		println("all_ents $all_ents")
 		return app.json[[]geometry.Entity](all_ents)
 	}
@@ -115,10 +115,26 @@ pub fn (mut app App) get_config(ids string) vweb.Result {
 	id_list:=ids.split(",")
 	if app.req.method == http.Method.options {
 		println(id_list)
-		return app.json[[]geometry.Entity](app.dbpool.get_metadatas_by_ids(id_list))
+		return app.json[[]geometry.Entity](app.pool.get_metadatas_by_ids(id_list))
 	} else {
 		println(id_list)
-		return app.json[[]geometry.Entity](app.dbpool.get_metadatas_by_ids(id_list))
+		return app.json[[]geometry.Entity](app.pool.get_metadatas_by_ids(id_list))
 	}
 }
 
+['/config/:ids'; post;options]
+pub fn (mut app App) store_config(id string) vweb.Result {
+	if app.req.method == http.Method.options {
+		println(id)
+		app.pool.store_metadatas(id,app.req.data) or {
+			panic(err)
+		}
+		return app.text(app.req.data)
+	} else {
+		println(id)
+		app.pool.store_metadatas(id,app.req.data) or {
+			panic(err)
+		}
+		return app.text(app.req.data)
+	}
+}

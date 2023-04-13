@@ -1,4 +1,4 @@
-module dbsql
+module dbpool
 
 import geometry
 import json
@@ -32,6 +32,14 @@ pub fn (mut s DbPool) init_mysql()!{
 			x1 DOUBLE,
 			y1 DOUBLE,
 			visible_size DOUBLE
+		)
+	") or {
+		panic(err)
+	}
+	s.mysql_exec("
+		CREATE TABLE IF NOT EXISTS METADATA(
+			id VARCHAR(40),
+			json VARCHAR(4000)
 		)
 	") or {
 		panic(err)
@@ -137,11 +145,17 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 	}
 }
 pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity {
+	placeholder_id:='########-####-####-####-############'
+	default_metadata:=json.encode(geometry.new_metadata(placeholder_id))
 	ids:=id_list.map("'${it}'").join(',')
 	q:="
-		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
-		FROM BOXES
-		WHERE id in ($ids)
+		SELECT
+		    bx.id,
+		    bx.ent_type,
+		    NVL(mdt.json,REPLACE('$default_metadata','$placeholder_id',bx.id)) as json
+		FROM BOXES bx
+		LEFT JOIN METADATA mdt on bx.id=mdt.id
+		WHERE bx.id in ($ids)
 	"
 	r:=s.mysql_query(q) or {
 		panic(err)
@@ -153,4 +167,11 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 			json: r.vals[2]
 		}
 	})
+}
+
+pub fn (mut s DbPool) store_metadatas(id string,data string) ! {
+	mut q:="INSERT INTO METADATA(id,json) VALUES ('$id','$data') ON DUPLICATE KEY UPDATE SET json=json"
+	s.mysql_exec(q) or {
+		panic(err)
+	}
 }
