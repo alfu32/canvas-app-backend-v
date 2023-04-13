@@ -33,7 +33,7 @@ pub fn (mut s DbPool) init_mysql()!{
 			y1 DOUBLE,
 			visible_size DOUBLE
 		)
-	") or {
+	".trim_indent()) or {
 		panic(err)
 	}
 	s.mysql_exec("
@@ -41,7 +41,7 @@ pub fn (mut s DbPool) init_mysql()!{
 			id VARCHAR(40),
 			json VARCHAR(4000)
 		)
-	") or {
+	".trim_indent()) or {
 		panic(err)
 	}
 }
@@ -92,7 +92,8 @@ fn (mut s DbPool) mysql_query(q string) !SelectResult[GenericRow] {
 pub fn (mut s DbPool)  get_all_entities() []geometry.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
-		FROM BOXES"
+		FROM BOXES
+	".trim_indent()
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -115,7 +116,8 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 		WHERE (x0 BETWEEN $x0 and $x1 and x1 BETWEEN $x0 and $x1
 		and y0 BETWEEN $y0 and $y1 and y1 BETWEEN $y0 and $y1 )
 		or ($x0 BETWEEN x0 and x1 and $x1 BETWEEN x0 and x1
-		and $y0 BETWEEN y0 and y1 and $y1 BETWEEN y0 and y1 )"
+		and $y0 BETWEEN y0 and y1 and $y1 BETWEEN y0 and y1 )
+	".trim_indent()
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -128,7 +130,7 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	})
 }
 pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
-	h:="INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size) VALUES "
+	h:=""
 	for ent in es{
 		bx:=json.decode(geometry.Box,ent.json) or {
 			panic(err)
@@ -138,7 +140,10 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 		x1:=bx.corner().x
 		y1:=bx.corner().y
 		vs:=math.max[f64](x1-x0,y1-y0)
-		q:="('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)"
+		q:="
+			INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size)
+			VALUES ('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)
+		".trim_indent()
 		s.mysql_exec(h+q+'') or {
 			panic(err)
 		}
@@ -156,7 +161,7 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 		FROM BOXES bx
 		LEFT JOIN METADATA mdt on bx.id=mdt.id
 		WHERE bx.id in ($ids)
-	"
+	".trim_indent()
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -170,7 +175,9 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 }
 
 pub fn (mut s DbPool) store_metadatas(id string,data string) ! {
-	mut q:="INSERT INTO METADATA(id,json) VALUES ('$id','$data') ON DUPLICATE KEY UPDATE SET json=json"
+	mut q:="
+		INSERT INTO METADATA(id,json) VALUES ('$id','$data') ON DUPLICATE KEY UPDATE SET json=json
+	".trim_indent()
 	s.mysql_exec(q) or {
 		panic(err)
 	}
