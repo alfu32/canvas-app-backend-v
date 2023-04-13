@@ -1,7 +1,7 @@
 Module {
-	name: 'backend'
+	name: 'canvas-ap-backend-v'
 	description: ''
 	version: '0.0.0'
-	license: 'MIT'
+	license: 'LGPL'
 	dependencies: []
 }
