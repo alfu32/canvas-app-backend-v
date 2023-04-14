@@ -24,7 +24,7 @@ pub struct DbPool {
 pub fn (mut s DbPool) init_mysql()!{
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS BOXES(
-			id VARCHAR(40),
+			id VARCHAR(40) PRIMARY KEY UNIQUE NOT NULL,
 			ent_type VARCHAR(40),
 			json VARCHAR(4000),
 			x0 DOUBLE,
@@ -38,7 +38,7 @@ pub fn (mut s DbPool) init_mysql()!{
 	}
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS METADATA(
-			id VARCHAR(40),
+			id VARCHAR(40) PRIMARY KEY UNIQUE NOT NULL,
 			json VARCHAR(4000)
 		)
 	".trim_indent()) or {
@@ -168,10 +168,20 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 		x1:=bx.corner().x
 		y1:=bx.corner().y
 		vs:=math.max[f64](x1-x0,y1-y0)
+		mayhem
 		q:="
 			INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size)
 			VALUES ('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)
+			ON DUPLICATE KEY UPDATE
+			ent_type=VALUES(ent_type),
+			`json`=VALUES(`json`),
+			x0=VALUES(x0),
+			y0=VALUES(y0),
+			x1=VALUES(x1),
+			y1=VALUES(y1),
+			visible_size=VALUES(visible_size)
 		".trim_indent()
+		println(q)
 		s.mysql_exec(h+q+'') or {
 			panic(err)
 		}
