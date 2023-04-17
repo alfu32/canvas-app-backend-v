@@ -74,6 +74,27 @@ pub fn (mut s DbPool) init_mysql()!{
 	".trim_indent()) or {
 		panic(err)
 	}
+	s.mysql_exec("
+		create or replace procedure store_box(
+			ent_id VARCHAR(40),
+			ent_ent_type VARCHAR(40),
+			ent_json VARCHAR(4000),
+			ent_x0 DOUBLE,
+			ent_y0 DOUBLE,
+			ent_x1 DOUBLE,
+			ent_y1 DOUBLE,
+			ent_visible_size DOUBLE
+		)
+		BEGIN
+			DELETE FROM BOXES WHERE ID=ent_id;
+			COMMIT;
+			INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size)
+				VALUES (ent_id,ent_ent_type,ent_json,ent_x0,ent_y0,ent_x1,ent_y1,ent_visible_size);
+			COMMIT;
+		end;
+	".trim_indent()) or {
+		panic(err)
+	}
 }
 pub fn (mut s DbPool) disconnect()!{
 	println("closed database $s")
@@ -158,9 +179,9 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	})
 }
 pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
-	h:=""
 	for ent in es{
 		bx:=json.decode(geometry.Box,ent.json) or {
+			eprintln("could not decode ${ent.json}")
 			panic(err)
 		}
 		x0:=bx.anchor.x
@@ -168,21 +189,12 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 		x1:=bx.corner().x
 		y1:=bx.corner().y
 		vs:=math.max[f64](x1-x0,y1-y0)
-		mayhem
 		q:="
-			INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size)
-			VALUES ('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)
-			ON DUPLICATE KEY UPDATE
-			ent_type=VALUES(ent_type),
-			`json`=VALUES(`json`),
-			x0=VALUES(x0),
-			y0=VALUES(y0),
-			x1=VALUES(x1),
-			y1=VALUES(y1),
-			visible_size=VALUES(visible_size)
-		".trim_indent()
+				call store_box('${ent.id}','${ent.ent_type}','${ent.json}',$x0,$y0,$x1,$y1,$vs)
+			".trim_indent()
 		println(q)
-		s.mysql_exec(h+q+'') or {
+		s.mysql_exec(q) or {
+			eprint(q)
 			panic(err)
 		}
 	}
