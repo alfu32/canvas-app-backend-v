@@ -110,6 +110,17 @@ fn (mut app App) store_entity() vweb.Result {
 		return app.json[[]geometry.Entity](all_ents)
 	}
 }
+['/entities'; delete;options]
+fn (mut app App) delete_entity(ids string) vweb.Result {
+	id_list:=ids.split(",")
+	if app.req.method == http.Method.options {
+		println(id_list)
+		return app.json[[]string](app.pool.remove_entities(id_list))
+	} else {
+		println(id_list)
+		return app.json[[]string](app.pool.remove_entities(id_list))
+	}
+}
 ['/config/:ids'; get;options]
 pub fn (mut app App) get_config(ids string) vweb.Result {
 	id_list:=ids.split(",")

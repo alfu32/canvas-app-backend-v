@@ -223,6 +223,18 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 		}
 	})
 }
+pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
+	placeholder_id:='########-####-####-####-############'
+	default_metadata:=json.encode(geometry.new_metadata(placeholder_id))
+	ids:=id_list.map("'${it}'").join(',')
+	q:="
+		DELETE FROM BOXES bx WHERE bx.id in ($ids)
+	".trim_indent()
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return id_list
+}
 
 pub fn (mut s DbPool) store_metadatas(id string,data string) ! {
 	mut q:="
