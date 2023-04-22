@@ -37,7 +37,7 @@ fn new_app() App {
 		middlewares: {
 			// chaining is allowed, middleware will be evaluated in order
 			// '/entities': [middleware_func, other_func]
-			'/':         [intercept]
+			'/':         [logger,intercept]
 		}
 	}
 	// makes all static files available.
@@ -45,6 +45,10 @@ fn new_app() App {
 	return app
 }
 
+pub fn logger(mut ctx vweb.Context) bool {
+	println('logger ${ctx.req.method} ${ctx.req.url}')
+	return true
+}
 pub fn intercept(mut ctx vweb.Context) bool {
 
 	println('intercepted ${ctx.req.method} ${ctx.req.url}')
@@ -68,11 +72,12 @@ pub fn intercept(mut ctx vweb.Context) bool {
 		"timeout=2, max=100"
 	)
 
-	if ctx.req.method==http.Method.options {
-		return true
-	} else {
-		return true
-	}
+	//// if ctx.req.method==http.Method.options {
+	//// 	return true
+	//// } else {
+	//// 	return true
+	//// }
+	return true
 }
 
 ['/entities/all'; get;options]
@@ -110,7 +115,7 @@ fn (mut app App) store_entity() vweb.Result {
 		return app.json[[]geometry.Entity](all_ents)
 	}
 }
-['/entities'; delete;options]
+['/entities/:ids'; delete;options]
 fn (mut app App) delete_entity(ids string) vweb.Result {
 	id_list:=ids.split(",")
 	if app.req.method == http.Method.options {
