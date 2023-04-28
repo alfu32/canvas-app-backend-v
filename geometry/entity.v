@@ -12,8 +12,9 @@ pub mut:
 pub struct EntityMetadata{
 	id string
 	ent_type string
-	technology string='javascript'
-	text string
+	technology string='javascript-node'
+	content_type string='application/javascript'
+	text string=''
 	tag string='code'
 }
 

@@ -56,6 +56,26 @@ pub fn (mut s DbPool) init_mysql()!{
 		panic(err)
 	}
 	s.mysql_exec("
+		create or replace function get_box(
+			ax NUMERIC(15),
+			ay NUMERIC(15),
+			szx NUMERIC(15),
+			szy NUMERIC(15)
+		) RETURNS GEOMETRY
+		BEGIN
+			return ST_POLYGONFROMTEXT(CONCAT(
+					'POLYGON((',
+					ax,' ',ay,',',
+					ax+szx,' ',ay,',',
+					ax+szx,' ',ay+szy,',',
+					ax,' ',ay+szy,',',
+					ax,' ',ay,'',
+					'))'));
+		END;
+	".trim_indent()) or {
+		panic(err)
+	}
+	s.mysql_exec("
 		create or replace function box_intersects_box(
 			ax0 NUMERIC(15),ay0 NUMERIC(15),ax1 NUMERIC(15),ay1 NUMERIC(15),
 			bx0 NUMERIC(15),by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
@@ -70,6 +90,26 @@ pub fn (mut s DbPool) init_mysql()!{
 				OR box_contains_point(bx0,by1, ax0,ay0,ax1,ay1)
 				OR box_contains_point(bx1,by1, ax0,ay0,ax1,ay1)
 				OR box_contains_point(bx1,by0, ax0,ay0,ax1,ay1);
+		END;
+	".trim_indent()) or {
+		panic(err)
+	}
+	s.mysql_exec("
+		create or replace function get_box_from_json(
+			json VARCHAR(4000))
+			RETURNS GEOMETRY
+		BEGIN
+			DECLARE ax NUMERIC(15);
+			DECLARE ay NUMERIC(15);
+			DECLARE szx NUMERIC(15);
+			DECLARE szy NUMERIC(15);
+			DECLARE boxtype VARCHAR(50);
+			SELECT JSON_VALUE(json,'$.ent_type') INTO boxtype;
+			SELECT JSON_VALUE(json,'$.anchor.x') INTO ax;
+			SELECT JSON_VALUE(json,'$.anchor.y') INTO ay;
+			SELECT JSON_VALUE(json,'$.size.x') INTO szx;
+			SELECT JSON_VALUE(json,'$.size.y') INTO szy;
+			return get_box(ax,ay,szx,szy);
 		END;
 	".trim_indent()) or {
 		panic(err)
@@ -162,9 +202,41 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	y0:=box.anchor.y
 	y1:=box.corner().y
 	q:="
-		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
-		FROM BOXES
-		WHERE box_intersects_box(x0,y0,x1,y1,$x0,$y0,$x1,$y1)
+		WITH DRAWABLES AS (
+			SELECT
+				id,
+				ent_type,
+				json,
+				x0,
+				y0,
+				x1,
+				y1,
+				visible_size
+			from BOXES
+			WHERE ST_INTERSECTS(get_box($x0,$y0,$x1,$y1),get_box_from_json(json))
+			OR ST_CONTAINS(get_box($x0,$y0,$x1,$y1),get_box_from_json(json))
+			or box_intersects_box(x0,y0,x1,y1,$x0,$y0,$x1,$y1)
+			AND ent_type!='Link'
+		)
+		SELECT * from drawables
+		UNION ALL
+		SELECT
+			id,
+			ent_type,
+			json,
+			x0,
+			y0,
+			x1,
+			y1,
+			visible_size
+
+		from BOXES
+		WHERE ent_type='Link'
+		AND (
+			JSON_VALUE(json,'$.source.ref') IN (SELECT ID FROM DRAWABLES)
+			or
+			JSON_VALUE(json,'$.destination.ref') IN (SELECT ID FROM DRAWABLES)
+		)
 	".trim_indent()
 	println(q)
 	r:=s.mysql_query(q) or {
@@ -201,17 +273,30 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 }
 pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity {
 	placeholder_id:='########-####-####-####-############'
-	default_metadata:=json.encode(geometry.new_metadata(placeholder_id))
+	placeholder_ent_type:='$$$$$$$$-$$$$-$$$$-$$$$-$$$$$$$$$$$$'
+	default_metadata:=json.encode(geometry.EntityMetadata{id:placeholder_id,ent_type:placeholder_ent_type})
 	ids:=id_list.map("'${it}'").join(',')
 	q:="
 		SELECT
 		    bx.id,
 		    bx.ent_type,
-		    NVL(mdt.json,REPLACE('$default_metadata','$placeholder_id',bx.id)) as json
+		    NVL(
+		    	REPLACE(mdt.json,'\n','\\\\n'),
+		    	REPLACE(
+		    		REPLACE(
+		    			'$default_metadata',
+		    			'$placeholder_id',
+		    			bx.id
+		    		),
+		    		'$placeholder_ent_type',
+		    		bx.ent_type
+		    	)
+		    ) as json
 		FROM BOXES bx
 		LEFT JOIN METADATA mdt on bx.id=mdt.id
 		WHERE bx.id in ($ids)
 	".trim_indent()
+	println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -236,9 +321,17 @@ pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
 }
 
 pub fn (mut s DbPool) store_metadatas(id string,data string) ! {
+	escaped_data:=data.replace("'","''")
 	mut q:="
-		INSERT INTO METADATA(id,json) VALUES ('$id','$data') ON DUPLICATE KEY UPDATE SET json=json
+		INSERT INTO METADATA(id,json)
+		VALUES (
+			'$id',
+			'$escaped_data'
+		)
+		ON DUPLICATE KEY UPDATE
+		json=VALUES(json)
 	".trim_indent()
+	println("Storing metadata using query \n $q")
 	s.mysql_exec(q) or {
 		panic(err)
 	}
