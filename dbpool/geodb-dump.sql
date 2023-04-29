@@ -21,7 +21,11 @@ USING geodb;
 --
 -- Table structure for table `BOXES`
 --
-
+DROP TABLE IF EXISTS `TECHNOLANG`;
+create TABLE TECHNOLANG(
+                           technoid VARCHAR(40),
+                           langid VARCHAR(40)
+);
 DROP TABLE IF EXISTS `BOXES`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

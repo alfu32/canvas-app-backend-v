@@ -45,6 +45,14 @@ pub fn (mut s DbPool) init_mysql()!{
 		panic(err)
 	}
 	s.mysql_exec("
+		create TABLE IF NOT EXISTS TECHNOLANG(
+			technoid VARCHAR(40),
+			langid VARCHAR(40)
+		);
+	".trim_indent()) or {
+		panic(err)
+	}
+	s.mysql_exec("
 		create or replace function box_contains_point(
 			px NUMERIC(15),py NUMERIC(15),bx0 NUMERIC(15),
 			by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
@@ -305,6 +313,38 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 			id: r.vals[0]
 			ent_type: r.vals[1]
 			json: r.vals[2]
+		}
+	})
+}
+pub fn (mut s DbPool)  get_languages() []string {
+	q:="
+		SELECT
+		    distinct langid
+		FROM TECHNOLANG
+	".trim_indent()
+	println(q)
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return r.rows.map(fn(r GenericRow) string {
+		return r.vals[0]
+	})
+}
+pub fn (mut s DbPool)  get_technologies_for_language(lang string) []geometry.TechnoLang {
+	q:="
+		SELECT
+		    technoid,langid
+		FROM TECHNOLANG
+		WHERE langid = lang
+	".trim_indent()
+	println(q)
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return r.rows.map(fn(r GenericRow) geometry.TechnoLang {
+		return geometry.TechnoLang{
+			technoid: r.vals[0]
+			langid: r.vals[1]
 		}
 	})
 }

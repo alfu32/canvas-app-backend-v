@@ -154,3 +154,22 @@ pub fn (mut app App) store_config(id string) vweb.Result {
 		return app.text(app.req.data)
 	}
 }
+['/technologies/:lang'; get;options]
+pub fn (mut app App) get_technologies_for_language(lang string) vweb.Result {
+
+	if app.req.method == http.Method.options {
+		println(lang)
+		return app.json[[]geometry.TechnoLang](app.pool.get_technologies_for_language(lang))
+	} else {
+		println(lang)
+		return app.json[[]geometry.TechnoLang](app.pool.get_technologies_for_language(lang))
+	}
+}
+['/languages'; get;options]
+pub fn (mut app App) get_technologies() vweb.Result {
+	if app.req.method == http.Method.options {
+		return app.json[[]string](app.pool.get_languages())
+	} else {
+		return app.json[[]string](app.pool.get_languages())
+	}
+}
