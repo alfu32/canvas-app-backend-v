@@ -335,7 +335,7 @@ pub fn (mut s DbPool)  get_technologies_for_language(lang string) []geometry.Tec
 		SELECT
 		    technoid,langid
 		FROM TECHNOLANG
-		WHERE langid = lang
+		WHERE langid = '$lang'
 	".trim_indent()
 	println(q)
 	r:=s.mysql_query(q) or {
