@@ -166,10 +166,18 @@ pub fn (mut app App) get_technologies_for_language(lang string) vweb.Result {
 	}
 }
 ['/languages'; get;options]
-pub fn (mut app App) get_technologies() vweb.Result {
+pub fn (mut app App) get_languages() vweb.Result {
 	if app.req.method == http.Method.options {
 		return app.json[[]string](app.pool.get_languages())
 	} else {
 		return app.json[[]string](app.pool.get_languages())
+	}
+}
+['/technologies'; get;options]
+pub fn (mut app App) get_technologies() vweb.Result {
+	if app.req.method == http.Method.options {
+		return app.json[[]geometry.TechnoLang](app.pool.get_technologies())
+	} else {
+		return app.json[[]geometry.TechnoLang](app.pool.get_technologies())
 	}
 }

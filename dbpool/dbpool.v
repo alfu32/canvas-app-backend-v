@@ -357,6 +357,23 @@ pub fn (mut s DbPool)  get_technologies_for_language(lang string) []geometry.Tec
 		}
 	})
 }
+pub fn (mut s DbPool)  get_technologies() []geometry.TechnoLang {
+	q:="
+		SELECT
+		    technoid,langid
+		FROM TECHNOLANG
+	".trim_indent()
+	println(q)
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return r.rows.map(fn(r GenericRow) geometry.TechnoLang {
+		return geometry.TechnoLang{
+			technoid: r.vals[0]
+			langid: r.vals[1]
+		}
+	})
+}
 pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
 	ids:=id_list.map("'${it}'").join(',')
 	mut q:="
