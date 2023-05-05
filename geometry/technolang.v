@@ -1,9 +1,9 @@
 module geometry
 
 pub struct TechnoLang{
-	technoid string
-	langid string
+	technoid string="none"
+	langid string="markdown"
 }
 pub fn new_technolang() TechnoLang {
-	return TechnoLang{}
+	return TechnoLang{"none","markdown"}
 }
