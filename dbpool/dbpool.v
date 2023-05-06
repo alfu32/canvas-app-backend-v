@@ -54,11 +54,11 @@ pub fn (mut s DbPool) init_mysql()!{
 	}
 	s.mysql_exec("
 		create or replace function box_contains_point(
-			px NUMERIC(15),py NUMERIC(15),bx0 NUMERIC(15),
-			by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
-		) RETURNS BOOLEAN
+			px decimal(15),py decimal(15),
+			bx0 decimal(15), by0 decimal(15), bx1 decimal(15), by1 decimal(15)
+		) returns tinyint(1)
 		BEGIN
-			return px between bx0 and bx1 and py between by0 and by1;
+			return px>=bx0 and px<=bx1 AND py>=by0 and py<=by1;
 		END;
 	".trim_indent()) or {
 		panic(err)
@@ -85,10 +85,9 @@ pub fn (mut s DbPool) init_mysql()!{
 	}
 	s.mysql_exec("
 		create or replace function box_intersects_box(
-			ax0 NUMERIC(15),ay0 NUMERIC(15),ax1 NUMERIC(15),ay1 NUMERIC(15),
-			bx0 NUMERIC(15),by0 NUMERIC(15),bx1 NUMERIC(15),by1 NUMERIC(15)
-		)
-			RETURNS BOOLEAN
+			ax0 decimal(15), ay0 decimal(15), ax1 decimal(15), ay1 decimal(15),
+			bx0 decimal(15), by0 decimal(15), bx1 decimal(15), by1 decimal(15)
+		) returns tinyint(1)
 		BEGIN
 			return box_contains_point(ax0,ay0, bx0,by0,bx1,by1)
 				OR box_contains_point(ax0,ay1, bx0,by0,bx1,by1)
@@ -97,7 +96,21 @@ pub fn (mut s DbPool) init_mysql()!{
 				OR box_contains_point(bx0,by0, ax0,ay0,ax1,ay1)
 				OR box_contains_point(bx0,by1, ax0,ay0,ax1,ay1)
 				OR box_contains_point(bx1,by1, ax0,ay0,ax1,ay1)
-				OR box_contains_point(bx1,by0, ax0,ay0,ax1,ay1);
+				OR box_contains_point(bx1,by0, ax0,ay0,ax1,ay1)
+				or (
+					ax0<=bx0 AND ax1 >=bx1 AND (
+						ay0 >= by0 AND ay0<=by1
+						or
+						ay1 >= by0 AND ay1<=by1
+					)
+				)
+				or (
+					   ay0<=by0 AND ay1 >=by1 AND (
+							   ax0 >= bx0 AND ax0<=bx1
+					   or
+							   ax1 >= bx0 AND ax1<=bx1
+				   )
+			   );
 		END;
 	".trim_indent()) or {
 		panic(err)
@@ -209,6 +222,8 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	x1:=box.corner().x
 	y0:=box.anchor.y
 	y1:=box.corner().y
+	szx := box.size.x
+	szy := box.size.y
 	q:="
 		WITH DRAWABLES AS (
 			SELECT
@@ -221,8 +236,8 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 				y1,
 				visible_size
 			from BOXES
-			WHERE ST_INTERSECTS(get_box($x0,$y0,$x1,$y1),get_box_from_json(json))
-			OR ST_CONTAINS(get_box($x0,$y0,$x1,$y1),get_box_from_json(json))
+			WHERE ST_INTERSECTS(get_box($x0,$y0,$szx,$szy),get_box_from_json(json))
+			OR ST_CONTAINS(get_box($x0,$y0,$szx,$szy),get_box_from_json(json))
 			or box_intersects_box(x0,y0,x1,y1,$x0,$y0,$x1,$y1)
 			AND ent_type!='Link'
 		)
