@@ -398,7 +398,7 @@ pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
 		println(q)
 		panic(err)
 	}
-	mut q:="
+	q="
 		DELETE FROM METADATA WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
