@@ -1,4 +1,4 @@
-CREATE DATABASE `geodb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */
+CREATE DATABASE `geodb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 
 CREATE TABLE `BOXES` (
                          `id` varchar(40) NOT NULL,
