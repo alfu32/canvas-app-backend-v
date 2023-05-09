@@ -1,5 +1,8 @@
 CREATE DATABASE `geodb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 
+
+/* TABLES */
+
 CREATE TABLE `BOXES` (
                          `id` varchar(40) NOT NULL,
                          `ent_type` varchar(40) DEFAULT NULL,
@@ -9,22 +12,97 @@ CREATE TABLE `BOXES` (
                          `x1` double DEFAULT NULL,
                          `y1` double DEFAULT NULL,
                          `visible_size` double DEFAULT NULL,
+                         `dt_created` timestamp NULL DEFAULT current_timestamp(),
+                         `dt_updated` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                         `notes` varchar(40) DEFAULT NULL,
                          PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
 CREATE TABLE `METADATA` (
                             `id` varchar(40) NOT NULL,
                             `json` varchar(4000) DEFAULT NULL,
+                            `dt_created` timestamp NOT NULL DEFAULT current_timestamp(),
+                            `dt_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                            `notes` varchar(40) DEFAULT NULL,
                             PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
 CREATE TABLE `TECHNOLANG` (
                               `technoid` varchar(40) DEFAULT NULL,
-                              `langid` varchar(40) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+                              `langid` varchar(40) DEFAULT NULL,
+                              `compiler_id` varchar(40) DEFAULT NULL,
+                              `dt_created` timestamp NOT NULL DEFAULT current_timestamp(),
+                              `dt_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                              `notes` varchar(40) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
+CREATE TABLE `test` (
+                        `id` varchar(255) NOT NULL,
+                        `data` varchar(255) DEFAULT NULL,
+                        PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+/* VIEWS */
+
+CREATE OR REPLACE VIEW V_PARENT AS
+SELECT
+    ID as id,
+    JSON_VALUE(json,'$.parent.ref') as parent_id
+FROM BOXES
+WHERE ent_type='Drawable';
+
+CREATE OR REPLACE VIEW geodb.V_HIERARCHY as
+WITH RECURSIVE hierarchy AS (
+    SELECT id,
+           CAST(id AS VARCHAR(4000)) AS path,
+           CAST(id AS VARCHAR(4000)) AS path_reversed
+    FROM V_PARENT
+    WHERE parent_id IS NULL
+
+    UNION ALL
+
+    SELECT
+        c.id,
+        CONCAT(c.id,',',p.path ) path,
+        CONCAT(p.path_reversed,',',c.id ) path_reversed
+    FROM V_PARENT c
+             JOIN hierarchy p ON c.parent_id = p.id
+)
+SELECT id,path,path_reversed
+FROM hierarchy
+UNION ALL
+SELECT id,'' as path,'' as path_reversed
+FROM V_PARENT
+WHERE V_PARENT.parent_id IS null;
+
+CREATE OR REPLACE VIEW  geodb.V_LINKS as
+select `geodb`.`BOXES`.`id` AS `ID`,
+       json_value(`geodb`.`BOXES`.`json`,'$.source.ref') AS `source`,
+       json_value(`geodb`.`BOXES`.`json`,'$.destination.ref') AS `destination`
+from `geodb`.`BOXES` where `geodb`.`BOXES`.`ent_type` = 'Link';
+
+CREATE OR REPLACE VIEW V_PARENTCHILD AS
+SELECT
+    BOXES.ID as id,
+    JSON_VALUE(json,'$.parent.ref') as parent_id,
+    CHILDREN.child as child_id
+FROM BOXES
+         LEFT OUTER JOIN (
+      SELECT
+          bx0.ID,
+          TT.ref as child
+      FROM BOXES bx0,
+      JSON_TABLE(bx0.json,
+        "$.children[*]"
+         COLUMNS(
+           rowid FOR ORDINALITY,
+           ref VARCHAR(40) PATH "$.ref" DEFAULT 'a' ON ERROR DEFAULT 'b' ON EMPTY
+         )
+        ) TT
+        WHERE bx0.ent_type='Drawable') CHILDREN ON CHILDREN.ID=BOXES.ID
+WHERE ent_type='Drawable';
+
+/* FUNCTIONS */
 
 CREATE DEFINER=`admin`@`localhost` FUNCTION `box_contains_point`(px decimal(15),py decimal(15),
                                                                  bx0 decimal(15), by0 decimal(15), bx1 decimal(15), by1 decimal(15)
@@ -96,21 +174,22 @@ BEGIN
 END;
 
 
-CREATE DEFINER=`admin`@`localhost` PROCEDURE `store_box`(
-	ent_id VARCHAR(40),
-	ent_ent_type VARCHAR(40),
-	ent_json VARCHAR(4000),
-	ent_x0 DOUBLE,
-	ent_y0 DOUBLE,
-	ent_x1 DOUBLE,
-	ent_y1 DOUBLE,
-	ent_visible_size DOUBLE
-)
+create definer = admin@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40), IN ent_json varchar(4000), IN ent_x0 double, IN ent_y0 double, IN ent_x1 double, IN ent_y1 double, IN ent_visible_size double)
 BEGIN
-    DELETE FROM BOXES WHERE ID=ent_id;
-    COMMIT;
+    /*DELETE FROM BOXES WHERE ID=ent_id;
+    COMMIT;*/
     INSERT INTO BOXES(id,ent_type,json,x0,y0,x1,y1,visible_size)
-    VALUES (ent_id,ent_ent_type,ent_json,ent_x0,ent_y0,ent_x1,ent_y1,ent_visible_size);
+    VALUES (ent_id,ent_ent_type,ent_json,ent_x0,ent_y0,ent_x1,ent_y1,ent_visible_size)
+    ON DUPLICATE KEY UPDATE
+                         ent_id=VALUES(ent_id),
+                         ent_ent_type=VALUES(ent_ent_type),
+                         ent_json=VALUES(ent_json),
+                         ent_x0=VALUES(ent_x0),
+                         ent_y0=VALUES(ent_y0),
+                         ent_x1=VALUES(ent_x1),
+                         ent_y1=VALUES(ent_y1),
+                         ent_visible_size=VALUES(ent_visible_size)
+    ;
     COMMIT;
 end;
 
