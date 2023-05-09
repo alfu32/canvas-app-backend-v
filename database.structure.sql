@@ -16,7 +16,7 @@ CREATE TABLE `BOXES` (
                          `dt_updated` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                          `notes` varchar(40) DEFAULT NULL,
                          PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `METADATA` (
                             `id` varchar(40) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `METADATA` (
                             `dt_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                             `notes` varchar(40) DEFAULT NULL,
                             PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `TECHNOLANG` (
                               `technoid` varchar(40) DEFAULT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE `TECHNOLANG` (
                               `dt_created` timestamp NOT NULL DEFAULT current_timestamp(),
                               `dt_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                               `notes` varchar(40) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `test` (
                         `id` varchar(255) NOT NULL,
