@@ -36,6 +36,29 @@ CREATE TABLE `TECHNOLANG` (
                               `notes` varchar(40) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('node', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('web', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('rhino', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('node', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('deno', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('vlang', 'v', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('golang', 'go', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('clang', 'c', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('kotlin-jvm', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('kotlin-native', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('zig', 'zig', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('rust', 'rust', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('bash', 'bash', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('text', 'txt', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('markdown', 'markdown', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('xml', 'xml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('json', 'json', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('csv', 'csv', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('yaml', 'yaml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes) VALUES ('toml', 'toml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+COMMIT;
+
+
 CREATE TABLE `test` (
                         `id` varchar(255) NOT NULL,
                         `data` varchar(255) DEFAULT NULL,
