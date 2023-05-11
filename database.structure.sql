@@ -77,8 +77,8 @@ WHERE ent_type='Drawable';
 CREATE OR REPLACE VIEW geodb.V_HIERARCHY as
 WITH RECURSIVE hierarchy AS (
     SELECT id,
-           CAST(id AS VARCHAR(4000)) AS path,
-           CAST(id AS VARCHAR(4000)) AS path_reversed
+           CONCAT('"',CAST(id AS VARCHAR(4000)),'"') AS path,
+           CONCAT('"',CAST(id AS VARCHAR(4000)),'"') AS path_reversed
     FROM V_PARENT
     WHERE parent_id IS NULL
 
@@ -86,8 +86,8 @@ WITH RECURSIVE hierarchy AS (
 
     SELECT
         c.id,
-        CONCAT(c.id,',',p.path ) path,
-        CONCAT(p.path_reversed,',',c.id ) path_reversed
+        CONCAT('"',c.id,'",',p.path ) path,
+        CONCAT(p.path_reversed,',"',c.id,'"' ) path_reversed
     FROM V_PARENT c
              JOIN hierarchy p ON c.parent_id = p.id
 )
@@ -196,6 +196,64 @@ BEGIN
     return get_box(ax,ay,szx,szy);
 END;
 
+create or replace procedure V_ANCESTORS(e0_id VARCHAR(40))
+BEGIN
+    SELECT
+        A.*,
+        parents.*,
+        bx.*
+    FROM (SELECT
+              h.id,
+              h.path,
+              CONCAT('[',IFNULL(h.path,''),']') as path_json
+          FROM V_HIERARCHY h
+          WHERE h.id=e0_id) A
+             cross join JSON_TABLE( A.path_json,
+          "$[*]"
+          COLUMNS(
+          parent_id VARCHAR(50) PATH '$'
+          )
+      ) parents
+    LEFT OUTER JOIN BOXES bx on parents.parent_id=bx.id;
+END;
+
+SELECT id from V_ANCESTORS(
+        '108dd311-ef22-11ed-a7a0-97eb72ded987'
+    );
+
+create or replace procedure V_COMMON_ANCESTORS(e0_id VARCHAR(40),e1_id VARCHAR(40))
+BEGIN
+    SELECT
+        bx.id,
+        bx.ent_type,
+       bx.json,
+       bx.x0,
+       bx.y0,
+       bx.x1,
+       bx.y1,
+       bx.visible_size,
+       bx.dt_created,
+       bx.dt_updated,
+       bx.notes
+    FROM (SELECT
+        h.id,
+        h.path,
+        CONCAT('[',IFNULL(h.path,''),']') as hhh
+    FROM V_HIERARCHY h
+          WHERE h.id=e0_id) A
+    cross join JSON_TABLE( A.hhh,
+          "$[*]"
+          COLUMNS(
+          id VARCHAR(50) PATH '$'
+          )
+      ) parents
+    LEFT OUTER JOIN BOXES bx on PARENTS.id=bx.id;
+END;
+
+CALL V_COMMON_ANCESTORS(
+'108dd311-ef22-11ed-a7a0-97eb72ded987',
+'17b8d8b1-ef22-11ed-a7a0-97eb72ded987'
+);
 
 create definer = admin@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40), IN ent_json varchar(4000), IN ent_x0 double, IN ent_y0 double, IN ent_x1 double, IN ent_y1 double, IN ent_visible_size double)
 BEGIN
