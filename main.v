@@ -14,14 +14,17 @@ struct App {
 }
 
 pub fn (mut app App) destroy_handler(sig os.Signal){
+	println("shutting down ...")
 	app.pool.disconnect() or {
 		panic(err)
 	}
+	println("done!")
 	exit(0)
 }
 fn main() {
 	app:=new_app()
 	os.signal_opt(os.Signal.term,app.destroy_handler)!
+	os.signal_opt(os.Signal.int,app.destroy_handler)!
 	vweb.run_at(app, vweb.RunParams{
 		port: 8081
 	}) or { panic(err) }
