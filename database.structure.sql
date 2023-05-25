@@ -25,6 +25,8 @@ create or replace table BOXES
     dt_deleted   timestamp default null,
     notes        varchar(40)                           null
 );
+alter table BOXES
+    modify json LONGTEXT null;
 
 create or replace table METADATA
 (
@@ -36,7 +38,8 @@ create or replace table METADATA
     dt_deleted   timestamp default null,
     notes      varchar(40)                           null
 );
-
+alter table METADATA
+    modify json LONGTEXT null;
 create or replace table TECHNOLANG
 (
     technoid    varchar(40)                           null,
