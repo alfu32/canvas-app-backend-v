@@ -252,7 +252,6 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 			x1,
 			y1,
 			visible_size
-
 		from BOXES
 		WHERE ent_type='Link'
 		AND (
