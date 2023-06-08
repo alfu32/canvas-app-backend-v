@@ -204,7 +204,7 @@ fn (mut s DbPool) mysql_query(q string) !SelectResult[GenericRow] {
 pub fn (mut s DbPool)  get_all_entities() []geometry.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
-		FROM BOXES
+		FROM BOXES WHERE dt_deleted='0000-00-00 00:00:00'
 	".trim_indent()
 	r:=s.mysql_query(q) or {
 		panic(err)
@@ -239,7 +239,7 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 			WHERE ST_INTERSECTS(get_box($x0,$y0,$szx,$szy),get_box_from_json(json))
 			OR ST_CONTAINS(get_box($x0,$y0,$szx,$szy),get_box_from_json(json))
 			or box_intersects_box(x0,y0,x1,y1,$x0,$y0,$x1,$y1)
-			AND ent_type!='Link'
+			AND ent_type!='Link' AND  dt_deleted='0000-00-00 00:00:00'
 		)
 		SELECT * from drawables
 		UNION ALL
@@ -258,7 +258,7 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 			JSON_VALUE(json,'$.source.ref') IN (SELECT ID FROM DRAWABLES)
 			or
 			JSON_VALUE(json,'$.destination.ref') IN (SELECT ID FROM DRAWABLES)
-		)
+		) AND  dt_deleted='0000-00-00 00:00:00'
 	".trim_indent()
 	println(q)
 	r:=s.mysql_query(q) or {
@@ -324,8 +324,8 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 		    	)
 		    ) as json
 		FROM BOXES bx
-		LEFT JOIN METADATA mdt on bx.id=mdt.id
-		WHERE bx.id in ($ids)
+		LEFT JOIN METADATA mdt on bx.id=mdt.id /*AND mdt.dt_deleted='0000-00-00 00:00:00'*/
+		WHERE bx.id in ($ids) AND  bx.dt_deleted='0000-00-00 00:00:00'
 	".trim_indent()
 	println(q)
 	r:=s.mysql_query(q) or {
@@ -388,7 +388,7 @@ pub fn (mut s DbPool)  get_technologies() []geometry.TechnoLang {
 		}
 	})
 }
-pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
+pub fn (mut s DbPool)  delete_entities(id_list []string) []string {
 	ids:=id_list.map("'${it}'").join(',')
 	mut q:="
 		DELETE FROM BOXES WHERE id in ($ids)
@@ -399,6 +399,24 @@ pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
 	}
 	q="
 		DELETE FROM METADATA WHERE id in ($ids)
+	".trim_indent()
+	s.mysql_exec(q) or {
+		println(q)
+		panic(err)
+	}
+	return id_list
+}
+pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
+	ids:=id_list.map("'${it}'").join(',')
+	mut q:="
+		UPDATE BOXES set dt_deleted=CURRENT_TIMESTAMP WHERE id in ($ids)
+	".trim_indent()
+	s.mysql_exec(q) or {
+		println(q)
+		panic(err)
+	}
+	q="
+		UPDATE METADATA set dt_deleted=CURRENT_TIMESTAMP WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
 		println(q)
