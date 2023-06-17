@@ -10,43 +10,43 @@ pub struct Style{
 pub fn get_styles() map[string]Style {
 	//Some basic mappings for attributes and default values.
 	return {
-		"strokeStyle":Style{
+		"stroke_style":Style{
 			svg_attr : "stroke", //corresponding svg attribute
 			canvas : "#000000", //canvas default
 			svg : "none",       //svg default
 			apply : "stroke"    //apply on stroke() or fill()
 		},
-		"fillStyle":Style{
+		"fill_style":Style{
 			svg_attr : "fill",
 			canvas : "#000000",
-			svg : "null", //svg default is black, but we need to special case this to handle canvas stroke without fill
+			svg : "null", //svg default is black, but we need to special case this to handle canvas.v stroke without fill
 			apply : "fill"
 		},
-		"lineCap":Style{
+		"line_cap":Style{
 			svg_attr : "stroke-linecap",
 			canvas : "butt",
 			svg : "butt",
 			apply : "stroke"
 		},
-		"lineJoin":Style{
+		"line_join":Style{
 			svg_attr : "stroke-linejoin",
 			canvas : "miter",
 			svg : "miter",
 			apply : "stroke"
 		},
-		"miterLimit":Style{
+		"miter_limit":Style{
 			svg_attr : "stroke-miterlimit",
 			canvas : "10",
 			svg : "4",
 			apply : "stroke"
 		},
-		"lineWidth":Style{
+		"line_width":Style{
 			svg_attr : "stroke-width",
 			canvas : "1",
 			svg : "1",
 			apply : "stroke"
 		},
-		"globalAlpha": Style{
+		"global_alpha": Style{
 			svg_attr : "opacity",
 			canvas : "1",
 			svg : "1",
@@ -56,22 +56,22 @@ pub fn get_styles() map[string]Style {
 			//font converts to multiple svg attributes, there is custom logic for this
 			canvas : "10px sans-serif"
 		},
-		"shadowColor":Style{
+		"shadow_color":Style{
 			canvas : "#000000"
 		},
-		"shadowOffsetX":Style{
+		"shadow_offset_x":Style{
 			canvas : "0"
 		},
-		"shadowOffsetY":Style{
+		"shadow_offset_y":Style{
 			canvas : "0"
 		},
-		"shadowBlur":Style{
+		"shadow_blur":Style{
 			canvas : "0"
 		},
-		"textAlign":Style{
+		"text_align":Style{
 			canvas : "start"
 		},
-		"textBaseline":Style{
+		"text_baseline":Style{
 			canvas : "alphabetic"
 		}
 	}
