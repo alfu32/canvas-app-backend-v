@@ -19,7 +19,7 @@ pub fn get_styles() map[string]Style {
 		"fill_style":Style{
 			svg_attr : "fill",
 			canvas : "#000000",
-			svg : "null", //svg default is black, but we need to special case this to handle canvas.v stroke without fill
+			svg : "null", //svg default is black, but we need to special case this to handle canvas_v.exclude stroke without fill
 			apply : "fill"
 		},
 		"line_cap":Style{

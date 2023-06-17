@@ -1,5 +1,5 @@
 Module {
-	name: 'canvas.v'
+	name: 'canvas'
 	description: ''
 	version: '0.0.1'
 	license: 'MIT'

@@ -17,6 +17,7 @@ pub fn node_type_from_text(n string) NodeType {
 }
 pub struct DOMNode{
 	pub mut:
+	parent_node ?&DOMNode
 	node_type NodeType
 	tag_name string
 	attributes map[string]string
