@@ -300,6 +300,11 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 			eprint(q)
 			panic(err)
 		}
+		println("COMMIT")
+		s.mysql_exec("COMMIT") or {
+			eprint("COMMIT")
+			panic(err)
+		}
 	}
 }
 pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity {
