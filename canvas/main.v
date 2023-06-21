@@ -8,9 +8,9 @@ fn main() {
 	mut div:=ce("pre")
 	div.set_attribute("class","button button-primary")
 	div.set_attribute("id","1234567")
-	div.append_child(ce("a"))
-	div.append_child(ce("b"))
-	div.append_child(ce("code"))
-	div.append_child(ce("div"))
+	div.append_child(mut ce("a"))
+	div.append_child(mut ce("b"))
+	div.append_child(mut ce("code"))
+	div.append_child(mut ce("div"))
 	println(div.to_xml())
 }

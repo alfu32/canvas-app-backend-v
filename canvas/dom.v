@@ -15,28 +15,32 @@ pub fn node_type_from_text(n string) NodeType {
 		else { NodeType.element }
 	}
 }
+
+[heap]
 pub struct DOMNode{
 	pub mut:
 	parent_node ?&DOMNode
 	node_type NodeType
 	tag_name string
 	attributes map[string]string
-	children []DOMNode
+	children []&DOMNode
 	node_value string
 }
 
 pub fn create_element(tag string) DOMNode{
 	return DOMNode{
+		parent_node: none
 		node_type: .element
 		tag_name: tag
 		attributes: {}
-		children: []DOMNode{}
+		children: []&DOMNode{}
 		node_value: ''
 	}
 }
 
-pub fn (mut node DOMNode) append_child(ch DOMNode) DOMNode{
+pub fn (mut node DOMNode) append_child(mut ch &DOMNode) DOMNode{
 	node.children << ch
+	ch.parent_node=&node
 	return node
 }
 pub fn (mut node DOMNode) set_attribute(attr_name string,attr_value string) DOMNode{
