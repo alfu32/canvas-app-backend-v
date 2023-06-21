@@ -54,7 +54,7 @@ interface CanvasRenderingContext2DInterface{
 
 struct CanvasRenderingContext2DSvg {
 pub mut:
-	current_node ?&DOMNode
+	current_node &DOMNode
 	current_path []PointPath
 	current_position Point2
 	current_transform SVGMatrix
@@ -77,6 +77,7 @@ pub mut:
 
 pub fn canvas_rendering_context2d_svg_init() CanvasRenderingContext2DSvg {
 	mut svg:=create_element("svg")
+	svg.set_attribute("xmlns",'http://www.w3.org/2000/svg')
 	return CanvasRenderingContext2DSvg{
 		current_node: &svg,
 		current_path: []
@@ -100,38 +101,26 @@ pub fn canvas_rendering_context2d_svg_init() CanvasRenderingContext2DSvg {
 	}
 }
 
+pub fn (mut this CanvasRenderingContext2DSvg) set_view_box(x Number,y Number,w Number,h Number){
+	this.canvas.set_attribute("viewBox","$x $y $w $h")
+}
+
 pub fn (mut this CanvasRenderingContext2DSvg) begin_path(){
 	mut path:=create_element("path")
-	if this.current_node != none && this.current_node or {
-		panic("current node was none")
-	}.tag_name == "path" {
-		this.current_node=this.current_node or {
-			panic("current node was none")
-		}.parent_node
+	if this.current_node.tag_name == "path" {
+		this.current_node=this.current_node.parent_node or {
+			panic("parent node was none at begin_path() , ${this.current_node.to_xml()}")
+		}
 	}
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut path)
+	this.current_node.append_child(mut path)
 	this.current_node=&path
 	this.current_path=[]PointPath{}
 }
 pub fn (mut this CanvasRenderingContext2DSvg) fill(){
-	if this.current_path.len > 0 && this.current_node != none{
-		this.current_node or {
-			panic("current node was none")
-		}.set_attribute("d",this.current_path.join(" "))
-	}
-	this.current_node or {
-		panic("currnet node was none")
-	}.set_attribute("fill",this.fill_style)
+	this.current_node.set_attribute("fill",this.fill_style)
 }
 pub fn (mut this CanvasRenderingContext2DSvg) stroke(){
-	this.current_node or {
-		panic("current node was none")
-	}.set_attribute("d",this.current_path.join(" "))
-	this.current_node or {
-		panic("current node was none")
-	}.set_attribute("stroke",this.stroke_style)
+	this.current_node.set_attribute("stroke",this.stroke_style)
 }
 pub fn (mut this CanvasRenderingContext2DSvg) arc(
 	x Number, y Number,
@@ -172,6 +161,7 @@ pub fn (mut this CanvasRenderingContext2DSvg) arc(
 	}
 	this.line_to(start_x, start_y)
 	this.current_path << "A $x $y 0 $large_arc_flag $sweep_flag $end_x $end_y"
+	this.update_path()
 	this.current_position = Point2{x: x, y: y,z:0,t:0,tag:''}
 }
 pub fn (mut this CanvasRenderingContext2DSvg) arc_to(x1 Number, y1 Number, x2 Number, y2 Number, radius Number) ! {
@@ -257,44 +247,56 @@ pub fn (mut this CanvasRenderingContext2DSvg) arc_to(x1 Number, y1 Number, x2 Nu
 	// and adding the end tangent point to the subpath.
 	this.arc(x, y, radius, start_angle, end_angle,false)
 }
+fn (mut this CanvasRenderingContext2DSvg) update_path(){
+	this.current_node.set_attribute("d",this.current_path.join(" "))
+}
 pub fn (mut this CanvasRenderingContext2DSvg) bezier_curve_to(
 	cp1x Number, cp1y Number, cp2x Number, cp2y Number,
 	x Number, y Number
 ){
 	this.current_position = Point2{x: x, y: y,z:0,t:0,tag:''}
 	this.current_path << "C $cp1x $cp1y $cp2x $cp2y $x $y"
+	this.update_path()
 }
 pub fn (mut this CanvasRenderingContext2DSvg) close_path(){
 	this.current_path << "Z"
+	this.update_path()
 }
-pub fn (this CanvasRenderingContext2DSvg) ellipse(x Number, y Number, radiusX Number, radiusY Number, rotation Number, startAngle Number, endAngle Number, counterclockwise bool){
-
+pub fn (mut this CanvasRenderingContext2DSvg) ellipse(cx Number, cy Number, rx Number, ry Number, rotation Number, startAngle Number, endAngle Number, counterclockwise bool){
+	//<ellipse cx="100" cy="50" rx="100" ry="50" />
+	mut ellipse := create_element("ellipse")
+	ellipse.set_attribute("cx","$cx")
+	ellipse.set_attribute("cy","$cy")
+	ellipse.set_attribute("rx","$rx")
+	ellipse.set_attribute("ry","$ry")
+	this.current_node.append_child(mut ellipse)
 }
 pub fn (mut this CanvasRenderingContext2DSvg) line_to(x Number, y Number){
 
 	this.current_position = Point2{x: x, y: y,z:0,t:0,tag:''}
 	this.current_path << "L $x $y"
+	this.update_path()
 }
 pub fn (mut this CanvasRenderingContext2DSvg) move_to(x Number, y Number){
 	this.current_position = Point2{x: x, y: y,z:0,t:0,tag:''}
 	this.current_path << "M $x $y"
+	this.update_path()
 }
 pub fn (mut this CanvasRenderingContext2DSvg) quadratic_curve_to(cpx Number, cpy Number, x Number, y Number){
 	this.current_position = Point2{x: x, y: y,z:0,t:0,tag:''}
 	this.current_path << "Q $cpx $cpy $x $y"
+	this.update_path()
 }
-pub fn (mut this CanvasRenderingContext2DSvg) rect(x Number, y Number, w Number, h Number) DOMNode{
+pub fn (mut this CanvasRenderingContext2DSvg) rect(x Number, y Number, w Number, h Number) &DOMNode{
 	mut rect:= create_element("rect")
 	rect.set_attribute("x","$x")
 	rect.set_attribute("y","$x")
 	rect.set_attribute("width","$w")
 	rect.set_attribute("height","$h")
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut rect)
-	return rect
+	this.current_node.append_child(mut rect)
+	return &rect
 }
-pub fn (mut this CanvasRenderingContext2DSvg) round_rect(x Number, y Number, w Number, h Number, radii []Number) DOMNode{
+pub fn (mut this CanvasRenderingContext2DSvg) round_rect(x Number, y Number, w Number, h Number, radii []Number) &DOMNode{
 	return this.rect(x,y,w,h)
 }
 pub fn (this CanvasRenderingContext2DSvg) get_line_dash() []Number{
@@ -308,36 +310,30 @@ pub fn (mut this CanvasRenderingContext2DSvg) fill_rect(x Number, y Number, w Nu
 }
 pub fn (mut this CanvasRenderingContext2DSvg) stroke_rect(x Number, y Number, w Number, h Number){
 	mut r:= this.rect(x,y,w,h)
-	r.set_attribute("fill",this.fill_style)
+	r.set_attribute("stroke",this.stroke_style)
 }
 pub fn (mut this CanvasRenderingContext2DSvg) save(){
 	mut g:=create_element("g")
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut g)
+	this.current_node.append_child(mut g)
 	this.current_node=&g
 }
 pub fn (mut this CanvasRenderingContext2DSvg) restore(){
-	this.current_node=this.current_node or {
-		panic("current node was none")
-	}.parent_node
+	this.current_node=this.current_node.parent_node or {
+		panic("parent node was none at restore() , ${this.current_node.to_xml()}")
+	}
 }
 pub fn (mut this CanvasRenderingContext2DSvg) text(text string, x Number, y Number, maxWidth Number) DOMNode {
 	mut t:=create_element("text")
 	t.set_attribute("x","$x")
 	t.set_attribute("y","$y")
 	t.node_value=text
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut t)
+	this.current_node.append_child(mut t)
 	return t
 }
 pub fn (mut this CanvasRenderingContext2DSvg) fill_text(text string, x Number, y Number, maxWidth Number){
 	mut t:=this.text(text,x,y,maxWidth)
 	t.set_attribute("fill",this.fill_style)
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut t)
+	this.current_node.append_child(mut t)
 }
 pub fn (this CanvasRenderingContext2DSvg) measure_text(text string) TextMetrics{
 	return TextMetrics{}
@@ -345,17 +341,13 @@ pub fn (this CanvasRenderingContext2DSvg) measure_text(text string) TextMetrics{
 pub fn (mut this CanvasRenderingContext2DSvg) stroke_text(text string, x Number, y Number, maxWidth Number){
 	mut t:=this.text(text,x,y,maxWidth)
 	t.set_attribute("stroke",this.stroke_style)
-	this.current_node or {
-		panic("current node was none")
-	}.append_child(mut t)
+	this.current_node.append_child(mut t)
 }
 pub fn (mut this CanvasRenderingContext2DSvg) get_transform() SVGMatrix{
 	return this.current_transform
 }
 pub fn (mut this CanvasRenderingContext2DSvg) reset_transform(){
-	this.current_node or {
-		panic("current node was none")
-	}.set_attribute("transform","1 0 0 0 1 0")
+	this.current_node.set_attribute("transform","1 0 0 0 1 0")
 }
 pub fn (mut this CanvasRenderingContext2DSvg) rotate(angle Number){
 	mut tf:= this.current_transform.rotate(angle)
@@ -371,9 +363,7 @@ pub fn (mut this CanvasRenderingContext2DSvg) set_transform(a Number, b Number, 
 }
 pub fn (mut this CanvasRenderingContext2DSvg) set_transform_matrix(mut tf SVGMatrix){
 	this.current_transform=tf
-	this.current_node or {
-		panic("current node was none")
-	}.set_attribute("transform",tf.to_svg_string())
+	this.current_node.set_attribute("transform",tf.to_svg_string())
 }
 pub fn (mut this CanvasRenderingContext2DSvg) transform(a Number, b Number, c Number, d Number, e Number, f Number){
 	// this.set_transform(a,b,c,d,e,f)
