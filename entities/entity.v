@@ -1,4 +1,4 @@
-module geometry
+module entities
 
 import json
 

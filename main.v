@@ -5,6 +5,7 @@ import os
 import dbpool
 import geometry
 import net.http
+import entities
 
 [heap]
 struct App {
@@ -94,10 +95,10 @@ pub fn (mut app App) on_options() vweb.Result{
 ['/entities/all'; get;options]
 pub fn (mut app App) get_all_entities() vweb.Result {
 	if app.req.method == http.Method.options {
-		/// return app.json[[]geometry.Entity](app.pool.get_all_entities())
+		/// return app.json[[]entities.Entity](app.pool.get_all_entities())
 		return app.text("[]")
 	}
-	return app.json[[]geometry.Entity](app.pool.get_all_entities())
+	return app.json[[]entities.Entity](app.pool.get_all_entities())
 }
 ['/entities/:x0/:y0/:w/:h'; get;options]
 pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Result {
@@ -106,7 +107,7 @@ pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Re
 		return app.text("[]")
 	}
 	println(bx)
-	return app.json[[]geometry.Entity](app.pool.get_entities_inside_box(bx))
+	return app.json[[]entities.Entity](app.pool.get_entities_inside_box(bx))
 }
 ['/entities'; post;options]
 fn (mut app App) store_entity() vweb.Result {
@@ -121,7 +122,7 @@ fn (mut app App) store_entity() vweb.Result {
 	}
 	all_ents:=app.pool.get_all_entities()
 	println("all_ents $all_ents")
-	return app.json[[]geometry.Entity](all_ents)
+	return app.json[[]entities.Entity](all_ents)
 }
 ['/entities/:ids'; delete;options]
 fn (mut app App) delete_entity(ids string) vweb.Result {
@@ -139,7 +140,7 @@ pub fn (mut app App) get_config(ids string) vweb.Result {
 	}
 	id_list:=ids.split(",")
 	println(id_list)
-	return app.json[[]geometry.Entity](app.pool.get_metadatas_by_ids(id_list))
+	return app.json[[]entities.Entity](app.pool.get_metadatas_by_ids(id_list))
 }
 
 ['/config/:ids'; post;options]

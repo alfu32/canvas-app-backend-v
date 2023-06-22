@@ -91,7 +91,7 @@ fn test_service(){
 	println("$rcode")
 	id:=rcode.rows[0].vals[0].u64()
 	j:='{"id":${id+1},"anchor":{"x":1,"y":-13},"size":{"x":10,"y":10}}'
-	s.store_entities([geometry.Entity{
+	s.store_entities([entities.Entity{
 		id:'${id+1}',
 		ent_type: 'Box',
 		json: j

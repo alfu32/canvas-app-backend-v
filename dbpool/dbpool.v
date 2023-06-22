@@ -4,6 +4,7 @@ import geometry
 import json
 import math
 import db.mysql
+import entities
 
 pub struct SqliteResultCode{
 	code i64
@@ -201,7 +202,7 @@ fn (mut s DbPool) mysql_query(q string) !SelectResult[GenericRow] {
 		long: 'dummy mysql result'
 	}}
 }
-pub fn (mut s DbPool)  get_all_entities() []geometry.Entity {
+pub fn (mut s DbPool)  get_all_entities() []entities.Entity {
 	q:="
 		SELECT id,ent_type,json,x0,y0,x1,y1,visible_size
 		FROM BOXES /* WHERE dt_deleted='0000-00-00 00:00:00'*/
@@ -209,15 +210,15 @@ pub fn (mut s DbPool)  get_all_entities() []geometry.Entity {
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r GenericRow) geometry.Entity {
-		return geometry.Entity{
+	return r.rows.map(fn(r GenericRow) entities.Entity {
+		return entities.Entity{
 			id: r.vals[0]
 			ent_type: r.vals[1]
 			json: r.vals[2]
 		}
 	})
 }
-pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Entity {
+pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []entities.Entity {
 	x0:=box.anchor.x
 	x1:=box.corner().x
 	y0:=box.anchor.y
@@ -264,15 +265,15 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []geometry.Enti
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r GenericRow) geometry.Entity {
-		return geometry.Entity{
+	return r.rows.map(fn(r GenericRow) entities.Entity {
+		return entities.Entity{
 			id: r.vals[0]
 			ent_type: r.vals[1]
 			json: r.vals[2]
 		}
 	})
 }
-pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
+pub fn (mut s DbPool) store_entities(es []entities.Entity) !{
 	for ent in es{
 		bx:=json.decode(geometry.Box,ent.json) or {
 			eprintln("could not decode ${ent.json}")
@@ -307,10 +308,10 @@ pub fn (mut s DbPool) store_entities(es []geometry.Entity) !{
 		}
 	}
 }
-pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity {
+pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []entities.Entity {
 	placeholder_id:='########-####-####-####-############'
 	placeholder_ent_type:='$$$$$$$$-$$$$-$$$$-$$$$-$$$$$$$$$$$$'
-	default_metadata:=json.encode(geometry.EntityMetadata{id:placeholder_id,ent_type:placeholder_ent_type})
+	default_metadata:=json.encode(entities.EntityMetadata{id:placeholder_id,ent_type:placeholder_ent_type})
 	ids:=id_list.map("'${it}'").join(',')
 	q:="
 		SELECT
@@ -336,8 +337,8 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []geometry.Entity 
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r GenericRow) geometry.Entity {
-		return geometry.Entity{
+	return r.rows.map(fn(r GenericRow) entities.Entity {
+		return entities.Entity{
 			id: r.vals[0]
 			ent_type: r.vals[1]
 			json: r.vals[2]
