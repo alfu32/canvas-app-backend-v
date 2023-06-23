@@ -3,7 +3,7 @@ module main
 import vweb
 import os
 import dbpool
-import geometry
+import alfu32.geometry
 import net.http
 import entities
 
@@ -115,7 +115,7 @@ fn (mut app App) store_entity() vweb.Result {
 		return app.text("[]")
 	}
 	println("received ${app.req.data}")
-	mut decoded:=geometry.entity_from_json_array(app.req.data) or { [] }
+	mut decoded:=entities.entity_from_json_array(app.req.data) or { [] }
 	println("decoded $decoded")
 	app.pool.store_entities(decoded) or {
 		panic(err)
@@ -161,7 +161,7 @@ pub fn (mut app App) get_technologies_for_language(lang string) vweb.Result {
 		return app.text("[]")
 	}
 	println(lang)
-	return app.json[[]geometry.TechnoLang](app.pool.get_technologies_for_language(lang))
+	return app.json[[]entities.TechnoLang](app.pool.get_technologies_for_language(lang))
 }
 ['/languages'; get;options]
 pub fn (mut app App) get_languages() vweb.Result {
@@ -175,5 +175,5 @@ pub fn (mut app App) get_technologies() vweb.Result {
 	if app.req.method == http.Method.options {
 		return app.text("[]")
 	}
-	return app.json[[]geometry.TechnoLang](app.pool.get_technologies())
+	return app.json[[]entities.TechnoLang](app.pool.get_technologies())
 }

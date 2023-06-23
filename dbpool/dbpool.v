@@ -1,10 +1,10 @@
 module dbpool
 
-import geometry
 import json
 import math
 import db.mysql
 import entities
+import alfu32.geometry
 
 pub struct SqliteResultCode{
 	code i64
@@ -165,12 +165,11 @@ struct GenericRow{
 	vals []string
 }
 fn (mut s DbPool) mysql_exec(q string) ! {
-	mut con:=mysql.Connection{
+	mut con:=mysql.connect (mysql.Config{
 		username: s.username
 		dbname: s.dbname
 		password: s.password
-	}
-	con.connect() or {
+	})or {
 		panic("could not connect to $s ")
 	}
 	con.query(q) or {
@@ -179,12 +178,11 @@ fn (mut s DbPool) mysql_exec(q string) ! {
 	con.close()
 }
 fn (mut s DbPool) mysql_query(q string) !SelectResult[GenericRow] {
-	mut con:=mysql.Connection{
+	mut con:=mysql.connect (mysql.Config{
 		username: s.username
 		dbname: s.dbname
 		password: s.password
-	}
-	con.connect() or {
+	})or {
 		panic("could not connect to $s ")
 	}
 	rv:= con.query(q) or {
@@ -359,7 +357,7 @@ pub fn (mut s DbPool)  get_languages() []string {
 		return r.vals[0]
 	})
 }
-pub fn (mut s DbPool)  get_technologies_for_language(lang string) []geometry.TechnoLang {
+pub fn (mut s DbPool)  get_technologies_for_language(lang string) []entities.TechnoLang {
 	q:="
 		SELECT
 		    technoid,langid
@@ -370,14 +368,14 @@ pub fn (mut s DbPool)  get_technologies_for_language(lang string) []geometry.Tec
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r GenericRow) geometry.TechnoLang {
-		return geometry.TechnoLang{
+	return r.rows.map(fn(r GenericRow) entities.TechnoLang {
+		return entities.TechnoLang{
 			technoid: r.vals[0]
 			langid: r.vals[1]
 		}
 	})
 }
-pub fn (mut s DbPool)  get_technologies() []geometry.TechnoLang {
+pub fn (mut s DbPool)  get_technologies() []entities.TechnoLang {
 	q:="
 		SELECT
 		    technoid,langid
@@ -387,8 +385,8 @@ pub fn (mut s DbPool)  get_technologies() []geometry.TechnoLang {
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
-	return r.rows.map(fn(r GenericRow) geometry.TechnoLang {
-		return geometry.TechnoLang{
+	return r.rows.map(fn(r GenericRow) entities.TechnoLang {
+		return entities.TechnoLang{
 			technoid: r.vals[0]
 			langid: r.vals[1]
 		}
