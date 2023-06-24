@@ -259,7 +259,7 @@ pub fn (mut s DbPool)  get_entities_inside_box(box geometry.Box) []entities.Enti
 			JSON_VALUE(json,'$.destination.ref') IN (SELECT ID FROM DRAWABLES)
 		) /*AND  dt_deleted='0000-00-00 00:00:00'*/
 	".trim_indent()
-	println(q)
+	// println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -294,7 +294,7 @@ pub fn (mut s DbPool) store_entities(es []entities.Entity) !{
 		y1=VALUES(y1),
 		visible_size=VALUES(visible_size)
 			".trim_indent()
-		println(q)
+		// println(q)
 		s.mysql_exec(q) or {
 			eprint(q)
 			panic(err)
@@ -331,7 +331,7 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []entities.Entity 
 		LEFT JOIN METADATA mdt on bx.id=mdt.id /*AND mdt.dt_deleted='0000-00-00 00:00:00'*/
 		WHERE bx.id in ($ids) /*AND  bx.dt_deleted='0000-00-00 00:00:00'*/
 	".trim_indent()
-	println(q)
+	// println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -349,7 +349,7 @@ pub fn (mut s DbPool)  get_languages() []string {
 		    distinct langid
 		FROM TECHNOLANG
 	".trim_indent()
-	println(q)
+	// println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -364,7 +364,7 @@ pub fn (mut s DbPool)  get_technologies_for_language(lang string) []entities.Tec
 		FROM TECHNOLANG
 		WHERE langid = '$lang'
 	".trim_indent()
-	println(q)
+	// println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -381,7 +381,7 @@ pub fn (mut s DbPool)  get_technologies() []entities.TechnoLang {
 		    technoid,langid
 		FROM TECHNOLANG
 	".trim_indent()
-	println(q)
+	// println(q)
 	r:=s.mysql_query(q) or {
 		panic(err)
 	}
@@ -398,14 +398,14 @@ pub fn (mut s DbPool)  delete_entities(id_list []string) []string {
 		DELETE FROM BOXES WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
-		println(q)
+		// println(q)
 		panic(err)
 	}
 	q="
 		DELETE FROM METADATA WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
-		println(q)
+		// println(q)
 		panic(err)
 	}
 	return id_list
@@ -416,14 +416,14 @@ pub fn (mut s DbPool)  remove_entities(id_list []string) []string {
 		UPDATE BOXES set dt_deleted=CURRENT_TIMESTAMP WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
-		println(q)
+		// println(q)
 		panic(err)
 	}
 	q="
 		UPDATE METADATA set dt_deleted=CURRENT_TIMESTAMP WHERE id in ($ids)
 	".trim_indent()
 	s.mysql_exec(q) or {
-		println(q)
+		// println(q)
 		panic(err)
 	}
 	return id_list

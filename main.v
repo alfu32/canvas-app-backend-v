@@ -50,12 +50,12 @@ fn new_app() App {
 }
 
 pub fn logger(mut ctx vweb.Context) bool {
-	println('logger ${ctx.req.method} ${ctx.req.url}')
+	/// println('logger ${ctx.req.method} ${ctx.req.url}')
 	return true
 }
 pub fn intercept(mut ctx vweb.Context) bool {
 
-	println('intercepted ${ctx.req.method} ${ctx.req.url}')
+	/// println('intercepted ${ctx.req.method} ${ctx.req.url}')
 	host:=ctx.req.header.get(http.CommonHeader.origin) or {
 		"*"
 	}
@@ -106,7 +106,7 @@ pub fn (mut app App) get_entities(x0 string,y0 string,w string,h string) vweb.Re
 	if app.req.method == http.Method.options {
 		return app.text("[]")
 	}
-	println(bx)
+	/// println(bx)
 	return app.json[[]entities.Entity](app.pool.get_entities_inside_box(bx))
 }
 ['/entities'; post;options]
@@ -114,14 +114,14 @@ fn (mut app App) store_entity() vweb.Result {
 	if app.req.method == http.Method.options {
 		return app.text("[]")
 	}
-	println("received ${app.req.data}")
+	/// println("received ${app.req.data}")
 	mut decoded:=entities.entity_from_json_array(app.req.data) or { [] }
-	println("decoded $decoded")
+	/// println("decoded $decoded")
 	app.pool.store_entities(decoded) or {
 		panic(err)
 	}
 	all_ents:=app.pool.get_all_entities()
-	println("all_ents $all_ents")
+	/// println("all_ents $all_ents")
 	return app.json[[]entities.Entity](all_ents)
 }
 ['/entities/:ids'; delete;options]
@@ -130,7 +130,7 @@ fn (mut app App) delete_entity(ids string) vweb.Result {
 		return app.text("[]")
 	}
 	id_list:=ids.split(",")
-	println(id_list)
+	/// println(id_list)
 	return app.json[[]string](app.pool.delete_entities(id_list))
 }
 ['/config/:ids'; get;options]
@@ -139,7 +139,7 @@ pub fn (mut app App) get_config(ids string) vweb.Result {
 		return app.text("[]")
 	}
 	id_list:=ids.split(",")
-	println(id_list)
+	/// println(id_list)
 	return app.json[[]entities.Entity](app.pool.get_metadatas_by_ids(id_list))
 }
 
@@ -148,7 +148,7 @@ pub fn (mut app App) store_config(id string) vweb.Result {
 	if app.req.method == http.Method.options {
 		return app.text("[]")
 	}
-	println(id)
+	/// println(id)
 	app.pool.store_metadatas(id,app.req.data) or {
 		panic(err)
 	}
@@ -160,7 +160,7 @@ pub fn (mut app App) get_technologies_for_language(lang string) vweb.Result {
 	if app.req.method == http.Method.options {
 		return app.text("[]")
 	}
-	println(lang)
+	/// println(lang)
 	return app.json[[]entities.TechnoLang](app.pool.get_technologies_for_language(lang))
 }
 ['/languages'; get;options]
