@@ -1,9 +1,9 @@
 CREATE DATABASE IF NOT EXISTS `geodb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 
 CREATE USER 'admin' identified by '1234' WITH GRANT OPTION;
-GRANT ALL ON 'admin' identified by '1234' WITH GRANT OPTION;
+GRANT ALL privileges ON *.* to 'admin' identified by 'password' WITH GRANT OPTION;
 CREATE USER 'su' identified by '1234' WITH GRANT OPTION;
-GRANT ALL ON 'su' identified by '1234' WITH GRANT OPTION;
+GRANT ALL privileges ON *.* to 'su' identified by 'password' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 
@@ -58,21 +58,21 @@ create or replace table test
     data varchar(255) null
 );
 -- --- VIEWS
-create or replace definer = admin@`%` view V_HIERARCHY as
+create or replace definer = su@`%` view V_HIERARCHY as
 with recursive hierarchy as (select `V_PARENT`.`id` AS `id`,concat('"',cast(`V_PARENT`.`id` as char(4000) charset utf8mb4),'"') AS `path`,concat('"',cast(`V_PARENT`.`id` as char(4000) charset utf8mb4),'"') AS `path_reversed` from `geodb`.`V_PARENT` where `V_PARENT`.`parent_id` is null union all select `c`.`id` AS `id`,concat('"',`c`.`id`,'",',`p`.`path`) AS `path`,concat(`p`.`path_reversed`,',"',`c`.`id`,'"') AS `path_reversed` from (`geodb`.`V_PARENT` `c` join `hierarchy` `p` on(`c`.`parent_id` = `p`.`id`)))select `hierarchy`.`id` AS `id`,`hierarchy`.`path` AS `path`,`hierarchy`.`path_reversed` AS `path_reversed` from `hierarchy` union all select `V_PARENT`.`id` AS `id`,'' AS `path`,'' AS `path_reversed` from `geodb`.`V_PARENT` where `V_PARENT`.`parent_id` is null;
 
-create or replace definer = admin@`%` view V_LINKS as
+create or replace definer = su@`%` view V_LINKS as
 select `geodb`.`BOXES`.`id` AS `ID`,json_value(`geodb`.`BOXES`.`json`,'$.source.ref') AS `source`,json_value(`geodb`.`BOXES`.`json`,'$.destination.ref') AS `destination` from `geodb`.`BOXES` where `geodb`.`BOXES`.`ent_type` = 'Link';
 
-create or replace definer = admin@`%` view V_PARENT as
+create or replace definer = su@`%` view V_PARENT as
 select `geodb`.`BOXES`.`id` AS `id`,json_value(`geodb`.`BOXES`.`json`,'$.parent.ref') AS `parent_id` from `geodb`.`BOXES` where `geodb`.`BOXES`.`ent_type` = 'Drawable';
 
-create or replace definer = admin@`%` view V_PARENTCHILD as
+create or replace definer = su@`%` view V_PARENTCHILD as
 select `geodb`.`BOXES`.`id` AS `id`,json_value(`geodb`.`BOXES`.`json`,'$.parent.ref') AS `parent_id`,`CHILDREN`.`child` AS `child_id` from (`geodb`.`BOXES` left join (select `bx0`.`id` AS `ID`,`TT`.`ref` AS `child` from `geodb`.`BOXES` `bx0` join JSON_TABLE(`bx0`.`json`, '$.children[*]' COLUMNS (`rowid` FOR ORDINALITY, `ref` varchar(40) PATH '$.ref' DEFAULT 'b' ON EMPTY DEFAULT 'a' ON ERROR)) `TT` where `bx0`.`ent_type` = 'Drawable') `CHILDREN` on(`CHILDREN`.`ID` = `geodb`.`BOXES`.`id`)) where `geodb`.`BOXES`.`ent_type` = 'Drawable';
 
 -- --- STORED PROCEDURES
 create or replace
-              definer = admin@`%` procedure V_ANCESTORS(IN e0_id varchar(40))
+              definer = su@`%` procedure V_ANCESTORS(IN e0_id varchar(40))
 BEGIN
 SELECT
     A.*,
@@ -94,7 +94,7 @@ FROM (SELECT
 END;
 
 create or replace
-              definer = admin@`%` procedure V_COMMON_ANCESTORS(IN e0_id varchar(40), IN e1_id varchar(40))
+              definer = su@`%` procedure V_COMMON_ANCESTORS(IN e0_id varchar(40), IN e1_id varchar(40))
 BEGIN
 SELECT
     bx.id,
@@ -124,7 +124,7 @@ FROM (SELECT
 END;
 
 create or replace
-              definer = admin@localhost function box_contains_point(px decimal(15), py decimal(15), bx0 decimal(15),
+              definer = su@localhost function box_contains_point(px decimal(15), py decimal(15), bx0 decimal(15),
               by0 decimal(15), bx1 decimal(15),
               by1 decimal(15)) returns tinyint(1)
 BEGIN
@@ -132,7 +132,7 @@ BEGIN
 END;
 
 create or replace
-              definer = admin@localhost function box_intersects_box(ax0 decimal(15), ay0 decimal(15), ax1 decimal(15),
+              definer = su@localhost function box_intersects_box(ax0 decimal(15), ay0 decimal(15), ax1 decimal(15),
               ay1 decimal(15), bx0 decimal(15), by0 decimal(15),
               bx1 decimal(15), by1 decimal(15)) returns tinyint(1)
 BEGIN
@@ -161,7 +161,7 @@ BEGIN
 END;
 
 create or replace
-              definer = admin@localhost function get_box(ax decimal(15), ay decimal(15), szx decimal(15),
+              definer = su@localhost function get_box(ax decimal(15), ay decimal(15), szx decimal(15),
               szy decimal(15)) returns geometry
 BEGIN
     return ST_POLYGONFROMTEXT(CONCAT(
@@ -175,7 +175,7 @@ BEGIN
 END;
 
 create or replace
-              definer = admin@localhost function get_box_from_json(json varchar(4000)) returns geometry
+              definer = su@localhost function get_box_from_json(json varchar(4000)) returns geometry
 BEGIN
     DECLARE ax NUMERIC(15);
 DECLARE ay NUMERIC(15);
@@ -191,7 +191,7 @@ return get_box(ax,ay,szx,szy);
 END;
 
 create or replace
-              definer = admin@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40),
+              definer = su@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40),
               IN ent_json varchar(4000), IN ent_x0 double, IN ent_y0 double,
               IN ent_x1 double, IN ent_y1 double, IN ent_visible_size double)
 BEGIN
