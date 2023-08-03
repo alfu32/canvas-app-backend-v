@@ -69,7 +69,7 @@ pub fn intercept(mut ctx vweb.Context) bool {
 	)
 	ctx.header.add(
 		http.CommonHeader.access_control_allow_headers,
-		"Content-Type,Content-Length"
+		"Content-Type,Content-Length,Authentication"
 	)
 	ctx.header.add(
 		http.CommonHeader.keep_alive,
