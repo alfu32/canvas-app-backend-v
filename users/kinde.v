@@ -14,9 +14,9 @@ pub struct KindeApi{
 pub mut:
 	domain string = "https://inflow.kinde.com"
 	audience string = "https://inflow.kinde.com/api"
-	client_id string = ""
-	secret string = ""
-proxy_authorization string
+	client_id string
+	secret string
+	proxy_authorization string
 	token Token
 }
 pub fn (mut ka KindeApi) get_client_credentials() ! {
