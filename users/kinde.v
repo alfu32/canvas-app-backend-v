@@ -53,7 +53,7 @@ pub fn (mut ka KindeApi) get_client_credentials() ! {
 pub fn (ka KindeApi) get_users() ! {
 	mut req :=  http.new_request(.get,"${ka.domain}/api/v1/users","")
 	req.header.add(.accept,"application/json")
-	req.header.add(.authorization,"Bearer ${ka.token}")
+	req.header.add(.authorization,"Bearer ${ka.token.access_token}")
 	req.do() or {
 		panic(err)
 	}
