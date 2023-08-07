@@ -6,17 +6,38 @@ import dbpool
 import alfu32.geometry
 import net.http
 import entities
+import users
+import json
+import sync.pool
 
+struct AppConfig {
+pub mut:
+	pool dbpool.DbPool
+	kinde users.KindeApi
+}
 [heap]
 struct App {
 	vweb.Context
+	mut :
 	middlewares map[string][]vweb.Middleware
-	mut : pool dbpool.DbPool
+	pool dbpool.DbPool
+	kinde users.KindeApi
 }
 
+pub fn (mut app App) to_app_cfg() AppConfig{
+	return AppConfig{
+		pool: app.pool
+		kinde: app.kinde
+	}
+}
 pub fn (mut app App) destroy_handler(sig os.Signal){
 	println("shutting down ...")
 	app.pool.disconnect() or {
+		panic(err)
+	}
+	mut appcfg:=app.to_app_cfg()
+	os.write_file('./vapp-settings.json',json.encode_pretty(appcfg)) or {
+		println("could not save configuration")
 		panic(err)
 	}
 	println("done!")
@@ -32,17 +53,46 @@ fn main() {
 }
 
 fn new_app() App {
-	mut pool:=dbpool.DbPool{}
-	pool.init_mysql() or {
+	config:=os.read_file('./vapp-settings.json') or {
+		panic(err)
+	}
+	mut app_cfg:=json.decode(AppConfig,config.str()) or {
 		panic(err)
 	}
 	mut app := App{
-		pool: pool,
-		middlewares: {
-			// chaining is allowed, middleware will be evaluated in order
-			// '/entities': [middleware_func, other_func]
-			'/':         [logger,intercept]
+		pool: dbpool.DbPool{
+			username: app_cfg.pool.username
+			dbname: app_cfg.pool.dbname
+			password: app_cfg.pool.password
+		},
+		kinde: users.KindeApi{
+			domain: app_cfg.kinde.domain
+			audience: app_cfg.kinde.audience
+			client_id: app_cfg.kinde.client_id
+			secret: app_cfg.kinde.secret
+			proxy_authorization: app_cfg.kinde.proxy_authorization
+			token: users.Token{
+				access_token: app_cfg.kinde.token.access_token
+				expires_in: app_cfg.kinde.token.expires_in
+				scope: app_cfg.kinde.token.scope
+				token_type: app_cfg.kinde.token.token_type
+			}
 		}
+	}
+	app.pool.init_mysql() or {
+		panic(err)
+	}
+	if app.kinde.token.access_token == '' {
+		println("no token found ... fetching new token")
+		app.kinde.get_client_credentials() or {
+			panic(err)
+		}
+	}
+	println(app.kinde.token)
+	app.middlewares= {
+		// chaining is allowed, middleware will be evaluated in order
+		// '/entities': [middleware_func, other_func]
+		'/':         [logger,intercept]
 	}
 	// makes all static files available.
 	app.mount_static_folder_at(os.resource_abs_path('.'), '/')

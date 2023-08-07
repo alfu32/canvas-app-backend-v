@@ -22,6 +22,15 @@ pub struct DbPool {
 	dbname string= 'geodb'
 	password string= 'password'
 }
+pub fn init(username string,
+dbname string,
+password string,) DbPool {
+	return DbPool{
+		username
+		dbname
+		password
+	}
+}
 pub fn (mut s DbPool) init_mysql()!{
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS BOXES(

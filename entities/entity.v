@@ -15,7 +15,7 @@ pub struct EntityMetadata{
 	ent_type string
 	technology TechnoLang=new_technolang()
 	content_type string='application/javascript'
-	text string=''
+	text string
 	tag string='code'
 }
 
