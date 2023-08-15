@@ -60,11 +60,11 @@ fn new_app() App {
 		panic(err)
 	}
 	mut app := App{
-		pool: dbpool.DbPool{
-			username: app_cfg.pool.username
-			dbname: app_cfg.pool.dbname
-			password: app_cfg.pool.password
-		},
+		pool: dbpool.connect(
+			app_cfg.pool.username,
+			app_cfg.pool.dbname,
+			app_cfg.pool.password,
+		) or { panic(err) },
 		kinde: users.KindeApi{
 			domain: app_cfg.kinde.domain
 			audience: app_cfg.kinde.audience

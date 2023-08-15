@@ -21,16 +21,23 @@ pub struct DbPool {
 	username string= 'admin'
 	dbname string= 'geodb'
 	password string= 'password'
+	db       &mysql.DB
 }
-pub fn init(username string,
-dbname string,
-password string,) DbPool {
+
+pub fn connect(username string, dbname string, password string) !DbPool {
+	db := mysql.connect(mysql.Config{
+		username: username
+		password: password
+		dbname: dbname
+	}) or { panic('could not connect to localhost:3306/${dbname} using ${username} ') }
 	return DbPool{
-		username
-		dbname
-		password
+		username: username
+		password: password
+		dbname: dbname
+		db: &db
 	}
 }
+
 pub fn (mut s DbPool) init_mysql()!{
 	s.mysql_exec("
 		CREATE TABLE IF NOT EXISTS BOXES(
@@ -167,8 +174,9 @@ pub fn (mut s DbPool) init_mysql()!{
 		panic(err)
 	}
 }
-pub fn (mut s DbPool) disconnect()!{
-	println("closed database $s")
+pub fn (mut s DbPool) disconnect() ! {
+	s.db.close()
+	println('closed database ${s}')
 }
 struct GenericRow{
 	vals []string
