@@ -11,6 +11,7 @@ pub mut:
 	json string
 }
 pub struct EntityMetadata{
+pub:
 	id string
 	ent_type string
 	technology TechnoLang=new_technolang()
@@ -34,10 +35,10 @@ pub fn entity_from_json_array(json_string string) ![]Entity {
 	if json_string == '' {
 		return []
 	}
-	entities:=json.decode([]Entity,json_string) or {
+	ents:=json.decode([]Entity,json_string) or {
 		panic("could not decode ((($json_string)))")
 	}
-	return entities
+	return ents
 }
 pub fn (e Entity) get_box() !geometry.Box {
 	return json.decode(geometry.Box,e.json)

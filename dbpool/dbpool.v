@@ -63,6 +63,7 @@ pub fn (mut s DbPool) init_mysql()!{
 	}
 	s.mysql_exec("
 		create TABLE IF NOT EXISTS TECHNOLANG(
+			extension VARCHAR(40),
 			technoid VARCHAR(40),
 			langid VARCHAR(40)
 		);
@@ -360,6 +361,39 @@ pub fn (mut s DbPool)  get_metadatas_by_ids(id_list []string) []entities.Entity 
 		}
 	})
 }
+pub fn (mut s DbPool)  get_metadata_by_id(id string) []entities.EntityMetadata {
+	placeholder_id:='########-####-####-####-############'
+	placeholder_ent_type:='$$$$$$$$-$$$$-$$$$-$$$$-$$$$$$$$$$$$'
+	default_metadata:=json.encode(entities.EntityMetadata{id:placeholder_id,ent_type:placeholder_ent_type})
+
+	q:="
+		SELECT
+		    bx.id,
+		    bx.ent_type,
+		    JSON_VALUE(mdt.json,'$.technology') as technology_json,
+		    JSON_VALUE(mdt.json,'$.content_type') as content_type,
+		    JSON_VALUE(mdt.json,'$.text') as text
+		FROM BOXES bx
+		LEFT JOIN METADATA mdt on mdt.id='$id'
+		WHERE bx.id = '$id'
+	".trim_indent()
+	// println(q)
+	r:=s.mysql_query(q) or {
+		panic(err)
+	}
+	return r.rows.map(fn(r GenericRow) entities.EntityMetadata {
+		return entities.EntityMetadata{
+			id: r.vals[0]
+			ent_type: r.vals[1]
+			technology: json.decode(entities.TechnoLang,r.vals[2]) or {
+				entities.TechnoLang{}
+			}
+			content_type: r.vals[3]
+			text: r.vals[4]
+			tag: "code"
+		}
+	})
+}
 pub fn (mut s DbPool)  get_languages() []string {
 	q:="
 		SELECT
@@ -377,7 +411,7 @@ pub fn (mut s DbPool)  get_languages() []string {
 pub fn (mut s DbPool)  get_technologies_for_language(lang string) []entities.TechnoLang {
 	q:="
 		SELECT
-		    technoid,langid
+		    technoid,langid,file_extension
 		FROM TECHNOLANG
 		WHERE langid = '$lang'
 	".trim_indent()
@@ -389,13 +423,14 @@ pub fn (mut s DbPool)  get_technologies_for_language(lang string) []entities.Tec
 		return entities.TechnoLang{
 			technoid: r.vals[0]
 			langid: r.vals[1]
+			extension: r.vals[2]
 		}
 	})
 }
 pub fn (mut s DbPool)  get_technologies() []entities.TechnoLang {
 	q:="
 		SELECT
-		    technoid,langid
+		    technoid,langid,file_extension
 		FROM TECHNOLANG
 	".trim_indent()
 	// println(q)
@@ -406,6 +441,7 @@ pub fn (mut s DbPool)  get_technologies() []entities.TechnoLang {
 		return entities.TechnoLang{
 			technoid: r.vals[0]
 			langid: r.vals[1]
+			extension: r.vals[2]
 		}
 	})
 }

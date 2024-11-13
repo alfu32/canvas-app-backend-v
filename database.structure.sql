@@ -40,8 +40,12 @@ create or replace table METADATA
 );
 alter table METADATA
     modify json LONGTEXT null;
-create or replace table TECHNOLANG
+
+drop table TECHNOLANG;
+
+create table TECHNOLANG
 (
+    file_extension varchar(40)                           null,
     technoid    varchar(40)                           null,
     langid      varchar(40)                           null,
     compiler_id varchar(40)                           null,
@@ -51,7 +55,8 @@ create or replace table TECHNOLANG
     notes       varchar(40)                           null
 );
 
-create or replace table test
+drop table test;
+create table test
 (
     id   varchar(255) not null
     primary key,
@@ -71,8 +76,9 @@ create or replace definer = su@`%` view V_PARENTCHILD as
 select `geodb`.`BOXES`.`id` AS `id`,json_value(`geodb`.`BOXES`.`json`,'$.parent.ref') AS `parent_id`,`CHILDREN`.`child` AS `child_id` from (`geodb`.`BOXES` left join (select `bx0`.`id` AS `ID`,`TT`.`ref` AS `child` from `geodb`.`BOXES` `bx0` join JSON_TABLE(`bx0`.`json`, '$.children[*]' COLUMNS (`rowid` FOR ORDINALITY, `ref` varchar(40) PATH '$.ref' DEFAULT 'b' ON EMPTY DEFAULT 'a' ON ERROR)) `TT` where `bx0`.`ent_type` = 'Drawable') `CHILDREN` on(`CHILDREN`.`ID` = `geodb`.`BOXES`.`id`)) where `geodb`.`BOXES`.`ent_type` = 'Drawable';
 
 -- --- STORED PROCEDURES
-create or replace
-              definer = su@`%` procedure V_ANCESTORS(IN e0_id varchar(40))
+create
+    definer = su@`%`
+    procedure V_ANCESTORS(IN e0_id varchar(40))
 BEGIN
 SELECT
     A.*,
@@ -93,8 +99,8 @@ FROM (SELECT
          LEFT OUTER JOIN BOXES bx on parents.parent_id=bx.id;
 END;
 
-create or replace
-              definer = su@`%` procedure V_COMMON_ANCESTORS(IN e0_id varchar(40), IN e1_id varchar(40))
+create definer = su@`%`
+    procedure V_COMMON_ANCESTORS(IN e0_id varchar(40), IN e1_id varchar(40))
 BEGIN
 SELECT
     bx.id,
@@ -123,16 +129,16 @@ FROM (SELECT
          LEFT OUTER JOIN BOXES bx on PARENTS.id=bx.id;
 END;
 
-create or replace
-              definer = su@localhost function box_contains_point(px decimal(15), py decimal(15), bx0 decimal(15),
+create
+    definer = su@localhost function box_contains_point(px decimal(15), py decimal(15), bx0 decimal(15),
               by0 decimal(15), bx1 decimal(15),
               by1 decimal(15)) returns tinyint(1)
 BEGIN
     return px>=bx0 and px<=bx1 AND py>=by0 and py<=by1;
 END;
 
-create or replace
-              definer = su@localhost function box_intersects_box(ax0 decimal(15), ay0 decimal(15), ax1 decimal(15),
+create
+    definer = su@localhost function box_intersects_box(ax0 decimal(15), ay0 decimal(15), ax1 decimal(15),
               ay1 decimal(15), bx0 decimal(15), by0 decimal(15),
               bx1 decimal(15), by1 decimal(15)) returns tinyint(1)
 BEGIN
@@ -160,8 +166,8 @@ BEGIN
                );
 END;
 
-create or replace
-              definer = su@localhost function get_box(ax decimal(15), ay decimal(15), szx decimal(15),
+create
+    definer = su@localhost function get_box(ax decimal(15), ay decimal(15), szx decimal(15),
               szy decimal(15)) returns geometry
 BEGIN
     return ST_POLYGONFROMTEXT(CONCAT(
@@ -174,8 +180,8 @@ BEGIN
             '))'));
 END;
 
-create or replace
-              definer = su@localhost function get_box_from_json(json varchar(4000)) returns geometry
+create
+    definer = su@localhost function get_box_from_json(json varchar(4000)) returns geometry
 BEGIN
     DECLARE ax NUMERIC(15);
 DECLARE ay NUMERIC(15);
@@ -190,8 +196,8 @@ SELECT JSON_VALUE(json,'$.size.y') INTO szy;
 return get_box(ax,ay,szx,szy);
 END;
 
-create or replace
-              definer = su@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40),
+create
+    definer = su@localhost procedure store_box(IN ent_id varchar(40), IN ent_ent_type varchar(40),
               IN ent_json varchar(4000), IN ent_x0 double, IN ent_y0 double,
               IN ent_x1 double, IN ent_y1 double, IN ent_visible_size double)
 BEGIN
@@ -216,27 +222,30 @@ end;
 
 -- -- DATA
 -- -- TECHNOLANG
-INSERT INTO geodb.TECHNOLANG (technoid, langid, compiler_id, dt_created, dt_updated, notes)
-VALUES ('node', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('web', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('rhino', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('node', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('deno', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('vlang', 'v', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('golang', 'go', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('clang', 'c', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('kotlin-jvm', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('kotlin-native', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('zig', 'zig', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('rust', 'rust', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('bash', 'bash', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('text', 'txt', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('markdown', 'markdown', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('xml', 'xml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('json', 'json', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('csv', 'csv', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('yaml', 'yaml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
-('toml', 'toml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null);
+INSERT INTO geodb.TECHNOLANG (file_extension,technoid, langid, compiler_id, dt_created, dt_updated, notes)
+VALUES
+('js','node', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('js','web', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('js','rhino', 'javascript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('ts','node', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('ts','deno', 'typescript', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('v','vlang', 'v', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('go','golang', 'go', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('c','clang', 'c', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('kt','kotlin-jvm', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('kt','kotlin-native', 'kotlin', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('zig','zig', 'zig', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('rs','rust', 'rust', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('sh','bash', 'bash', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('txt','text', 'txt', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('md','markdown', 'markdown', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('xml','xml', 'xml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('json','json', 'json', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('csv','csv', 'csv', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('yaml','yaml', 'yaml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('toml','toml', 'toml', null, '2023-05-09 03:56:14', '2023-05-09 03:56:14', null),
+('py','python', 'python', null, '2024-11-09 03:56:14', '2024-11-09 03:56:14', null),
+('json','json-schema', 'json', null, '2024-11-09 03:56:14', '2024-11-09 03:56:14', null);
 
 
 
